@@ -1,26 +1,117 @@
 # Minesweeper Exploration RPG
 
-Godot 4 prototype for a minesweeper-style exploration RPG.
+A 2D strategy exploration game made in Godot 4. The game combines minesweeper-style clues, grid movement, resource management, combat risk, and stat reallocation.
 
-## Run
+You begin at the center of a 19 x 19 map. Most of the map is hidden. Move through the grid, read clue numbers, fight enemies when necessary, use altars to rebuild your stats, and reach the treasure on the edge of the map before your moves run out.
+
+## How To Run
 
 Open this folder in Godot 4 and run `Main.tscn`.
 
 ## Controls
 
 - Move: arrow keys or `WASD`
-- Move by mouse: click an adjacent grid cell
-- Restart: `R` or the side-panel restart button
+- Mouse move: click an adjacent grid cell
+- Open altar: stand on an altar and press `Enter`
+- Apply altar build and exit: press `Enter` again, or click `Apply`
+- Restart: press `R`, or click `New Map`
 
-## Implemented Rules
+## Goal
 
-- 19 x 19 map, fixed start at `(9, 9)`, random edge treasure.
-- Hidden route generation for basic reachability.
-- 12 altars with early, mid, late, and treasure-near placement constraints.
-- Around 112 enemies by default, scaled by Chebyshev distance from center.
-- Extra low-level enemies are seeded around altars to create safer combat opportunities.
-- Enemy rewards scale by level and are shown in the enemy key.
-- Minesweeper numbers count enemies in the surrounding 8 cells.
-- Vision values 4-8 reveal orthogonal cells plus diagonals in the specified order.
-- Enemy reveal thresholds follow the script plan.
-- Combat, reward points, defense loss, movement depletion, altar redistribution, and treasure victory.
+Find the treasure on the edge of the map and defeat the Treasure Guard.
+
+The Treasure Guard has 20 power. If your power is lower than 20 when you enter the treasure cell, you lose. If your power is at least 20, you win.
+
+## Core Rules
+
+- The map is 19 x 19.
+- The player starts at `(9, 9)`.
+- The treasure spawns on a random edge cell.
+- Moving 1 cell costs 1 move.
+- If moves reach 0, the game ends in defeat.
+- Revealed normal cells show minesweeper-style clue numbers.
+- A clue number tells you how many enemies are in the 8 surrounding cells.
+- Clue numbers count enemies only. They do not count altars, treasure, or the player.
+- Enemies inside your revealed vision area show their icon and power.
+
+## Player Stats
+
+- Power: decides whether you can defeat an enemy.
+- Defense: decreases by 1 after each enemy you defeat.
+- Vision: controls which nearby cells are revealed.
+- Moves: your remaining movement resource.
+- Unused points: reward points that have not been converted into stats.
+- Exchange budget: the value of your current stats plus unused points.
+
+## Combat
+
+When you enter an enemy cell:
+
+- If your power is lower than the enemy power, you lose.
+- If your power is equal to or higher than the enemy power, you defeat the enemy.
+- Defeating an enemy gives reward points based on enemy level.
+- Defeating an enemy reduces defense by 1.
+- If defense falls below 0, you lose.
+
+## Altars
+
+Altars are visible from the start.
+
+At an altar, you can reallocate your current build. This is not just spending new reward points. You can reduce stats you already have and move that value into other stats.
+
+For example, even with 0 unused points, you can lower Power and use the released budget to increase Defense, Vision, or Moves.
+
+Stat costs:
+
+- Power: 1 budget per point
+- Defense: 1 budget per point
+- Vision: starts at 4; each +1 costs 2 budget
+- Moves: every 5 moves costs 1 budget
+
+If a new build costs more than your exchange budget, the input will not increase. You can still reduce stats to free budget.
+
+## Map Symbols And Visuals
+
+- Hidden cell: dark gray square
+- Revealed normal cell: light gray square
+- Player: blue circle with `P`
+- Start cell: cyan square
+- Altar: purple diamond with `A`
+- Treasure: gold star with `T`
+- Clue number: colored number on a revealed normal cell
+
+Clue number colors:
+
+- `1`: blue, low danger
+- `2`: yellow, medium danger
+- `3`: orange, high danger
+- `4+`: red, very high danger
+
+## Enemy Icons
+
+Enemies use different shapes, colors, letters, power ranges, and rewards.
+
+| Enemy | Letter | Power | Reward | Visual |
+| --- | --- | ---: | ---: | --- |
+| Lesser Foe | `e` | 2-4 | 1 | small light-red circle |
+| Foe | `E` | 5-7 | 2 | red circle with white ring |
+| Bandit | `B` | 8-10 | 3 | orange-red triangle with slash |
+| Raider | `R` | 11-13 | 5 | dark-red diamond with cross |
+| Armored Foe | `H` | 14-16 | 7 | dark-red square armor icon |
+| Elite Foe | `X` | 17-19 | 9-10 | black-red hexagon with red ring |
+| Treasure Guard | `G` | 20 | 0 | black crown with gold base |
+
+The side panel contains an Enemy Key that shows each icon, power range, and reward.
+
+## Map Generation
+
+- The game creates a hidden route from the start to the treasure to avoid impossible maps.
+- Around 112 enemies are generated by default.
+- Enemy strength generally increases with distance from the center.
+- Low-level enemies are more common near the center and around altars.
+- Some low-level enemies can appear in route and altar-adjacent safety areas.
+- The treasure area is more dangerous than the center.
+
+## Current Prototype Scope
+
+This prototype uses simple program-drawn shapes instead of external art assets. The focus is on testing the game rules, map generation, combat, movement pressure, clue reading, and altar stat exchange.
