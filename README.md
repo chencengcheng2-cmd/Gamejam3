@@ -72,34 +72,41 @@ If a new build costs more than your exchange budget, the input will not increase
 
 ## Map Symbols And Visuals
 
-- Hidden cell: dark gray square
-- Revealed normal cell: light gray square
-- Player: blue circle with `P`
-- Start cell: cyan square
-- Altar: purple diamond with `A`
-- Treasure: gold star with `T`
-- Clue number: colored number on a revealed normal cell
+The prototype uses program-drawn icons. The README images below match the current in-game visual language.
 
-Clue number colors:
+| Image | Element | Meaning |
+| --- | --- | --- |
+| <img src="docs/assets/icons/hidden-cell.svg" width="48" alt="Hidden cell"> | Hidden cell | An unexplored tile. Its contents are unknown. |
+| <img src="docs/assets/icons/revealed-cell.svg" width="48" alt="Revealed cell"> | Revealed normal cell | A safe revealed floor tile. It can show a clue number. |
+| <img src="docs/assets/icons/start-cell.svg" width="48" alt="Start cell"> | Start cell | The center spawn area. The player starts at `(9, 9)`. |
+| <img src="docs/assets/icons/player.svg" width="48" alt="Player"> | Player | The blue `P` marker shows the current player position. |
+| <img src="docs/assets/icons/altar.svg" width="48" alt="Altar"> | Altar | The purple diamond `A`. Stand on it and press `Enter` to reallocate stats. |
+| <img src="docs/assets/icons/treasure.svg" width="48" alt="Treasure"> | Treasure | The gold star `T`. This is the final goal on the map edge. |
 
-- `1`: blue, low danger
-- `2`: yellow, medium danger
-- `3`: orange, high danger
-- `4+`: red, very high danger
+## Clue Number Textures
+
+Clue numbers appear on revealed normal cells. They tell you how many enemies are in the 8 surrounding cells.
+
+| Image | Number | Meaning |
+| --- | --- | --- |
+| <img src="docs/assets/icons/clue-1.svg" width="48" alt="Clue 1"> | `1` | Low danger. One nearby enemy. |
+| <img src="docs/assets/icons/clue-2.svg" width="48" alt="Clue 2"> | `2` | Medium danger. Two nearby enemies. |
+| <img src="docs/assets/icons/clue-3.svg" width="48" alt="Clue 3"> | `3` | High danger. Three nearby enemies. |
+| <img src="docs/assets/icons/clue-4.svg" width="48" alt="Clue 4 plus"> | `4+` | Very high danger. Four or more nearby enemies. |
 
 ## Enemy Icons
 
 Enemies use different shapes, colors, letters, power ranges, and rewards.
 
-| Enemy | Letter | Power | Reward | Visual |
-| --- | --- | ---: | ---: | --- |
-| Lesser Foe | `e` | 2-4 | 1 | small light-red circle |
-| Foe | `E` | 5-7 | 2 | red circle with white ring |
-| Bandit | `B` | 8-10 | 3 | orange-red triangle with slash |
-| Raider | `R` | 11-13 | 5 | dark-red diamond with cross |
-| Armored Foe | `H` | 14-16 | 7 | dark-red square armor icon |
-| Elite Foe | `X` | 17-19 | 9-10 | black-red hexagon with red ring |
-| Treasure Guard | `G` | 20 | 0 | black crown with gold base |
+| Image | Enemy | Letter | Power | Reward | Texture Explanation |
+| --- | --- | --- | ---: | ---: | --- |
+| <img src="docs/assets/icons/lesser-foe.svg" width="48" alt="Lesser Foe"> | Lesser Foe | `e` | 2-4 | 1 | Small light-red circle. This is the safest enemy type and is common near the center and altars. |
+| <img src="docs/assets/icons/foe.svg" width="48" alt="Foe"> | Foe | `E` | 5-7 | 2 | Red circle with a white ring. A basic early-game combat target. |
+| <img src="docs/assets/icons/bandit.svg" width="48" alt="Bandit"> | Bandit | `B` | 8-10 | 3 | Orange-red triangle with a white slash. A mid-level threat. |
+| <img src="docs/assets/icons/raider.svg" width="48" alt="Raider"> | Raider | `R` | 11-13 | 5 | Dark-red diamond with a cross. A stronger enemy that gives a better reward. |
+| <img src="docs/assets/icons/armored-foe.svg" width="48" alt="Armored Foe"> | Armored Foe | `H` | 14-16 | 7 | Dark-red square armor icon. It represents a durable late-game enemy. |
+| <img src="docs/assets/icons/elite-foe.svg" width="48" alt="Elite Foe"> | Elite Foe | `X` | 17-19 | 9-10 | Black-red hexagon with a red ring. One of the most dangerous normal enemies. |
+| <img src="docs/assets/icons/treasure-guard.svg" width="48" alt="Treasure Guard"> | Treasure Guard | `G` | 20 | 0 | Black crown with a gold base. It guards the treasure and must be defeated to win. |
 
 The side panel contains an Enemy Key that shows each icon, power range, and reward.
 

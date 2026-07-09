@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <rect x="2" y="2" width="60" height="60" fill="#b8bab8" stroke="#555" stroke-width="2"/>
+  <polygon points="32,10 54,50 10,50" fill="#f24814"/>
+  <line x1="20" y1="31" x2="44" y2="31" stroke="#fff" stroke-width="4"/>
+  <text x="32" y="45" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" font-weight="700" fill="#fff">B</text>
+</svg>
