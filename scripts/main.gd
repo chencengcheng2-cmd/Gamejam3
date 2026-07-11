@@ -821,7 +821,7 @@ func _fail(reason: String) -> void:
 	game_over = true
 	game_won = false
 	altar_panel.visible = false
-	_reveal_all_mines()
+	_reveal_endgame_map()
 	_set_message("[color=#d03030]Defeat: %s[/color]\nPress R to restart." % reason)
 	_update_ui()
 	queue_redraw()
@@ -831,16 +831,17 @@ func _win(reason: String) -> void:
 	game_over = true
 	game_won = true
 	altar_panel.visible = false
+	_reveal_endgame_map()
 	_set_message("[color=#2c9f45]Victory: %s[/color]\nPress R to restart." % reason)
 	_update_ui()
 	queue_redraw()
 
 
-func _reveal_all_mines() -> void:
+func _reveal_endgame_map() -> void:
 	for y in range(GRID_SIZE):
 		for x in range(GRID_SIZE):
 			var pos := Vector2i(x, y)
-			if _cell(pos).mine:
+			if _cell(pos).mine or _cell(pos).type in [CELL_ALTAR, CELL_TREASURE, CELL_BONUS]:
 				_cell(pos).revealed = true
 
 
