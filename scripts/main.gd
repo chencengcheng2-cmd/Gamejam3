@@ -12,7 +12,7 @@ const ALTAR_COUNT := 16
 const BONUS_COUNT := 20
 const BONUS_MIN_POINTS := 1
 const BONUS_MAX_POINTS := 3
-const TREASURE_ARROW_CHANCE := 0.08
+const TREASURE_ARROW_CHANCE := 0.14
 const SIDE_WIDTH := 420.0
 
 const CELL_NORMAL := "normal"

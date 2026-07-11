@@ -116,7 +116,7 @@ Clue numbers appear on revealed normal cells. They tell you how many mines are i
 | <img src="docs/assets/icons/clue-3.svg" width="48" alt="Clue 3"> | `3` | High danger. Three nearby mines. |
 | <img src="docs/assets/icons/clue-4.svg" width="48" alt="Clue 4 plus"> | `4+` | Very high danger. Four or more nearby mines. |
 
-Rare revealed blank cells may show an arrow (`^`, `v`, `<`, or `>`). These arrows are subtle hints that point in the rough direction of the treasure. They are guidance hints, not movement commands.
+Some revealed blank cells may show an arrow (`^`, `v`, `<`, or `>`). These arrows are subtle hints that point in the rough direction of the treasure. They are guidance hints, not movement commands.
 
 ## Map Generation
 
