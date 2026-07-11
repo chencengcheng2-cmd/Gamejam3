@@ -79,7 +79,7 @@ For example, even with 0 unused points, you can lower Defense and use that budge
 Stat costs:
 
 - Defense: 1 budget per point
-- Vision: every 5 vision clicks costs 1 budget, and altar changes happen in units of 5
+- Vision: every 5 vision clicks costs 1 budget, and altar changes adjust Vision by 5 at a time
 - Moves: every 5 moves costs 1 budget
 
 Each altar can only be used once. After applying a build, that altar becomes inactive.

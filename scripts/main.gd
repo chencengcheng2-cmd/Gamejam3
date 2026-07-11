@@ -720,8 +720,6 @@ func _validate_altar_build(build_moves: int, build_vision: int, build_defense: i
 		return "Moves must be between 1 and 50."
 	if build_vision < 0 or build_vision > 50:
 		return "Vision must be between 0 and 50."
-	if build_vision % 5 != 0:
-		return "Vision can only be changed in units of 5."
 	if build_defense < 0 or build_defense > 20:
 		return "Defense must be between 0 and 20."
 	return ""
