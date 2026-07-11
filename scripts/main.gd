@@ -6,6 +6,8 @@ const START_MOVES := 15
 const START_VISION := 15
 const START_DEFENSE := 3
 const MINE_COUNT := 90
+const TREASURE_MIN_DISTANCE := 17
+const TREASURE_AREA_MINE_LIMIT := 12
 const ALTAR_COUNT := 16
 const BONUS_COUNT := 20
 const BONUS_MIN_POINTS := 1
@@ -313,7 +315,7 @@ func _generate_map_once() -> void:
 
 func _random_treasure_cell() -> Vector2i:
 	var candidates := _candidate_cells(func(pos: Vector2i) -> bool:
-		return pos != CENTER and _manhattan(pos, CENTER) >= 20
+		return pos != CENTER and _manhattan(pos, CENTER) >= TREASURE_MIN_DISTANCE
 	)
 	return candidates[rng.randi_range(0, candidates.size() - 1)]
 
@@ -384,12 +386,16 @@ func _place_mines() -> void:
 	for pos in _treasure_mine_candidates():
 		if _mine_count() >= MINE_COUNT:
 			return
+		if _treasure_area_mine_count() >= TREASURE_AREA_MINE_LIMIT:
+			break
 		if _can_have_mine(pos, route_lookup) and not _cell(pos).mine:
 			_cell(pos).mine = true
 
 	for pos in candidates:
 		if _mine_count() >= MINE_COUNT:
 			break
+		if _chebyshev(pos, treasure_pos) <= 3 and _treasure_area_mine_count() >= TREASURE_AREA_MINE_LIMIT:
+			continue
 		if not _cell(pos).mine:
 			_cell(pos).mine = true
 
@@ -403,6 +409,16 @@ func _treasure_mine_candidates() -> Array[Vector2i]:
 				candidates.append(pos)
 	candidates.shuffle()
 	return candidates
+
+
+func _treasure_area_mine_count() -> int:
+	var count := 0
+	for dy in range(-3, 4):
+		for dx in range(-3, 4):
+			var pos := treasure_pos + Vector2i(dx, dy)
+			if _is_inside(pos) and _cell(pos).mine:
+				count += 1
+	return count
 
 
 func _build_hidden_route(from_pos: Vector2i, to_pos: Vector2i) -> Array[Vector2i]:

@@ -28,7 +28,7 @@ Vision can reveal the treasure location, but revealing it does not win the game.
 
 - The map is 25 x 25.
 - The player starts at `(12, 12)`.
-- The treasure spawns at least 20 movement steps from the center, but it does not have to be on the map edge.
+- The treasure spawns more than 16 movement steps from the center, but it does not have to be on the map edge.
 - The map contains mines, treasure, altars, and bonus treasures.
 - Clicking a hidden cell costs 1 Vision.
 - Moving 1 cell costs 1 Move.
@@ -122,8 +122,8 @@ Rare revealed blank cells may show an arrow (`^`, `v`, `<`, or `>`). These arrow
 
 - The game creates a mine-free route from the start to the treasure to avoid impossible maps.
 - The map currently generates 90 mines.
-- The treasure appears at least 20 movement steps from the center and may appear inside the map, not only on the edge.
-- More mines are placed around the treasure area.
+- The treasure appears more than 16 movement steps from the center and may appear inside the map, not only on the edge.
+- A limited number of extra mines are placed near the treasure, while the rest are spread across the map.
 - Bonus treasures are placed across the map to give the player more altar-exchange points.
 - The map currently generates 16 altars.
 - The map currently generates 20 bonus treasures.
