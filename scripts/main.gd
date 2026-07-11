@@ -6,10 +6,10 @@ const START_MOVES := 15
 const START_VISION := 15
 const START_DEFENSE := 3
 const MINE_COUNT := 68
-const ALTAR_COUNT := 12
+const ALTAR_COUNT := 16
 const BONUS_COUNT := 18
-const BONUS_MIN_POINTS := 1
-const BONUS_MAX_POINTS := 3
+const BONUS_MIN_POINTS := 2
+const BONUS_MAX_POINTS := 5
 const SIDE_WIDTH := 420.0
 
 const CELL_NORMAL := "normal"
@@ -321,14 +321,42 @@ func _random_edge_cell() -> Vector2i:
 
 
 func _place_altars() -> void:
-	var candidates := _candidate_cells(func(pos: Vector2i) -> bool: return pos != CENTER and pos != treasure_pos)
-	for pos in candidates:
+	var region_size := 5
+	var region_origins: Array[Vector2i] = []
+	for y in range(0, GRID_SIZE, region_size):
+		for x in range(0, GRID_SIZE, region_size):
+			region_origins.append(Vector2i(x, y))
+	region_origins.shuffle()
+
+	for origin in region_origins:
 		if altar_positions.size() >= ALTAR_COUNT:
-			break
-		if _is_far_from_existing(pos, altar_positions, 4):
+			return
+		_try_place_altar_in_region(origin, region_size, 4)
+
+	for origin in region_origins:
+		if altar_positions.size() >= ALTAR_COUNT:
+			return
+		_try_place_altar_in_region(origin, region_size, 3)
+
+
+func _try_place_altar_in_region(origin: Vector2i, region_size: int, min_distance: int) -> bool:
+	var candidates: Array[Vector2i] = []
+	for y in range(origin.y, mini(origin.y + region_size, GRID_SIZE)):
+		for x in range(origin.x, mini(origin.x + region_size, GRID_SIZE)):
+			var pos := Vector2i(x, y)
+			if pos == CENTER or pos == treasure_pos:
+				continue
+			if _cell(pos).type != CELL_NORMAL:
+				continue
+			candidates.append(pos)
+	candidates.shuffle()
+	for pos in candidates:
+		if _is_far_from_existing(pos, altar_positions, min_distance):
 			_cell(pos).type = CELL_ALTAR
 			_cell(pos).revealed = true
 			altar_positions.append(pos)
+			return true
+	return false
 
 
 func _place_bonus_treasures() -> void:

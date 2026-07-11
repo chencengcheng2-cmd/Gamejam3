@@ -86,7 +86,7 @@ Each altar can only be used once. After applying a build, that altar becomes ina
 
 ## Bonus Treasures
 
-Bonus treasures are extra collectible rewards on the map. They are more common than before, and each gives 1-3 unused points when the player stands on the tile and presses `Enter`.
+Bonus treasures are extra collectible rewards on the map. They are more common than before, and each gives 2-5 unused points when the player stands on the tile and presses `Enter`.
 
 Unused points can be spent at altars together with the value of the player's current stats.
 
@@ -123,7 +123,8 @@ Clue numbers appear on revealed normal cells. They tell you how many mines are i
 - The treasure appears on the map edge.
 - More mines are placed around the treasure area.
 - Bonus treasures are placed across the map to give the player more altar-exchange points.
-- Altars are distributed across the map and each can be used once.
+- The map currently generates 16 altars.
+- Altars are distributed by map regions for a more even spread, and each can be used once.
 
 ## Current Prototype Scope
 
