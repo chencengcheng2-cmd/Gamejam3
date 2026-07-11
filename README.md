@@ -14,6 +14,7 @@ Open this folder in Godot 4 and run `Main.tscn`.
 - Move: arrow keys or `WASD`.
 - Mouse move: click a revealed adjacent cell.
 - Open altar: stand on an unused altar and press `Enter`.
+- Collect bonus treasure: stand on it and press `Enter`.
 - Apply altar build and exit: press `Enter` again, or click `Apply`.
 - Restart: press `R`, or click `New Map`.
 
@@ -36,7 +37,8 @@ Vision can reveal the treasure location, but revealing it does not win the game.
 - Clicking a mine reveals that mine, but does not reduce Defense.
 - Moving onto a mine reduces Defense by 1.
 - If Defense falls below 0, the game ends in defeat.
-- Moving onto a bonus treasure grants unused points.
+- Moving onto a bonus treasure reveals that it can be collected.
+- Pressing `Enter` while standing on a bonus treasure grants unused points and removes the treasure from the map.
 - Moving onto an unused altar lets the player reallocate stats.
 - Each altar can be used once.
 - All altar locations are visible from the start.
@@ -47,10 +49,10 @@ Revealed normal cells show a clue number. The number tells how many mines are in
 
 If the clicked cell has 0 surrounding mines, the game expands the reveal automatically, like classic Minesweeper. Nearby safe cells and border clue numbers are opened together.
 
-Special cells such as treasure, altars, and bonus treasures can be revealed by Vision, but their effects require movement:
+Special cells such as treasure, altars, and bonus treasures can be revealed by Vision, but their effects require movement or interaction:
 
 - Revealed treasure: shows the target location.
-- Revealed bonus treasure: shows where to move for points.
+- Revealed bonus treasure: shows where to move, then press `Enter`, for points.
 - Revealed altar: shows where to move for stat exchange.
 - Revealed mine: shows a dangerous cell that costs Defense only if stepped on.
 
@@ -84,7 +86,7 @@ Each altar can only be used once. After applying a build, that altar becomes ina
 
 ## Bonus Treasures
 
-Bonus treasures are extra collectible rewards on the map. They are more common than before, and each gives 1-3 unused points when the player moves onto the tile.
+Bonus treasures are extra collectible rewards on the map. They are more common than before, and each gives 1-3 unused points when the player stands on the tile and presses `Enter`.
 
 Unused points can be spent at altars together with the value of the player's current stats.
 
@@ -100,7 +102,7 @@ The prototype uses program-drawn icons. The README images below match the curren
 | <img src="docs/assets/icons/player.svg" width="48" alt="Player"> | Player | The blue `P` marker shows the current player position. |
 | <img src="docs/assets/icons/altar.svg" width="48" alt="Altar"> | Altar | The purple diamond `A`. Move onto it and press `Enter` to reallocate stats. |
 | <img src="docs/assets/icons/treasure.svg" width="48" alt="Treasure"> | Treasure | The gold star `T`. Move onto it to win. |
-| <img src="docs/assets/icons/bonus-treasure.svg" width="48" alt="Bonus treasure"> | Bonus treasure | The green `B`. Move onto it to gain unused points. |
+| <img src="docs/assets/icons/bonus-treasure.svg" width="48" alt="Bonus treasure"> | Bonus treasure | The green `B`. Move onto it and press `Enter` to gain unused points. |
 | <img src="docs/assets/icons/mine.svg" width="48" alt="Mine"> | Mine | The black `M`. Clicking reveals it safely; moving onto it costs Defense. |
 
 ## Clue Number Textures

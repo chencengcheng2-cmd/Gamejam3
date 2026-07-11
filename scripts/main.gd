@@ -72,6 +72,9 @@ func _input(event: InputEvent) -> void:
 		if altar_panel.visible or _cell(player_pos).type == CELL_ALTAR:
 			_toggle_altar_panel()
 			get_viewport().set_input_as_handled()
+		elif _cell(player_pos).type == CELL_BONUS and not _cell(player_pos).collected:
+			_collect_bonus_treasure()
+			get_viewport().set_input_as_handled()
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -539,14 +542,27 @@ func _handle_current_cell() -> void:
 				_set_message("You reached an unused altar. Press Enter to reallocate stats.")
 		CELL_BONUS:
 			if not cell.collected:
-				unused_points += cell.bonus_points
-				total_bonus_points += cell.bonus_points
-				cell.collected = true
-				_set_message("Collected bonus treasure: +%d unused point(s)." % cell.bonus_points)
+				_set_message("You found a bonus treasure. Press Enter to collect +%d unused point(s)." % cell.bonus_points)
 			else:
 				_set_message("This bonus treasure has already been collected.")
 		_:
 			_set_message("Moved to (%d, %d)." % [player_pos.x, player_pos.y])
+
+
+func _collect_bonus_treasure() -> void:
+	var cell := _cell(player_pos)
+	if cell.type != CELL_BONUS or cell.collected:
+		return
+	unused_points += cell.bonus_points
+	total_bonus_points += cell.bonus_points
+	var gained_points: int = cell.bonus_points
+	cell.collected = true
+	cell.bonus_points = 0
+	cell.type = CELL_NORMAL
+	_calculate_numbers()
+	_set_message("Collected bonus treasure: +%d unused point(s)." % gained_points)
+	_update_ui()
+	queue_redraw()
 
 
 func _open_altar_panel() -> void:
