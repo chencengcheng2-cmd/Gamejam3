@@ -121,7 +121,7 @@ Rare revealed blank cells may show an arrow (`^`, `v`, `<`, or `>`). These arrow
 ## Map Generation
 
 - The game creates a mine-free route from the start to the treasure to avoid impossible maps.
-- The map currently generates 90 mines.
+- The map currently generates 110 mines.
 - The treasure appears more than 16 movement steps from the center and may appear inside the map, not only on the edge.
 - A limited number of extra mines are placed near the treasure, while the rest are spread across the map.
 - Bonus treasures are placed across the map to give the player more altar-exchange points.
