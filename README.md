@@ -65,7 +65,7 @@ Special cells such as treasure, altars, and bonus treasures can be revealed by V
 Initial stats:
 
 - Moves: 15
-- Vision: 4
+- Vision: 15
 - Defense: 3
 
 ## Altars
@@ -77,7 +77,7 @@ For example, even with 0 unused points, you can lower Defense and use that budge
 Stat costs:
 
 - Defense: 1 budget per point
-- Vision: each point costs 2 budget
+- Vision: every 5 vision clicks costs 1 budget
 - Moves: every 5 moves costs 1 budget
 
 Each altar can only be used once. After applying a build, that altar becomes inactive.

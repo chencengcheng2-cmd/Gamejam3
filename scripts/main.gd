@@ -3,7 +3,7 @@ extends Control
 const GRID_SIZE := 19
 const CENTER := Vector2i(9, 9)
 const START_MOVES := 15
-const START_VISION := 4
+const START_VISION := 15
 const START_DEFENSE := 3
 const MINE_COUNT := 68
 const ALTAR_COUNT := 12
@@ -616,7 +616,7 @@ func _update_altar_budget() -> void:
 	var status := "Ready" if valid else validation_message
 	if cost > pool:
 		status = "Not enough budget"
-	altar_budget_label.text = "Build cost: %d / %d\nUnused points after apply: %d\nStatus: %s\nMoves: every 5 costs 1\nVision: +1 costs 2\nDefense: +1 costs 1" % [cost, pool, max(0, pool - cost), status]
+	altar_budget_label.text = "Build cost: %d / %d\nUnused points after apply: %d\nStatus: %s\nMoves: every 5 costs 1\nVision: every 5 costs 1\nDefense: +1 costs 1" % [cost, pool, max(0, pool - cost), status]
 	apply_button.disabled = not valid
 
 
@@ -676,7 +676,7 @@ func _update_altar_state_label() -> void:
 
 
 func _build_cost(build_moves: int, build_vision: int, build_defense: int) -> int:
-	return ceili(float(build_moves) / 5.0) + build_vision * 2 + build_defense
+	return ceili(float(build_moves) / 5.0) + ceili(float(build_vision) / 5.0) + build_defense
 
 
 func _current_exchange_pool() -> int:
