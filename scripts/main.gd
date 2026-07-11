@@ -7,7 +7,7 @@ const START_VISION := 15
 const START_DEFENSE := 3
 const MINE_COUNT := 68
 const ALTAR_COUNT := 16
-const BONUS_COUNT := 18
+const BONUS_COUNT := 26
 const BONUS_MIN_POINTS := 2
 const BONUS_MAX_POINTS := 5
 const SIDE_WIDTH := 420.0
@@ -793,7 +793,10 @@ func _draw_cell_content(rect: Rect2, pos: Vector2i, font: Font) -> void:
 			_draw_centered_text(font, rect, "T", 18, Color(0.2, 0.12, 0.0))
 		CELL_BONUS:
 			draw_circle(rect.get_center(), cell_size * 0.28, Color(0.1, 0.72, 0.24))
-			_draw_centered_text(font, rect, "B", 18, Color.WHITE)
+			_draw_centered_text_at(font, Rect2(rect.position, Vector2(rect.size.x, rect.size.y * 0.55)), "B", 13, Color.WHITE)
+			var bonus_text := str(cell.bonus_points) if not cell.collected else ""
+			if not bonus_text.is_empty():
+				_draw_centered_text_at(font, Rect2(rect.position + Vector2(0, rect.size.y * 0.48), Vector2(rect.size.x, rect.size.y * 0.5)), bonus_text, 12, Color.WHITE)
 		_:
 			var number: int = cell.number
 			if number > 0:
@@ -825,6 +828,10 @@ func _draw_star(center: Vector2, radius: float, color: Color) -> void:
 
 
 func _draw_centered_text(font: Font, rect: Rect2, text: String, font_size: int, color: Color) -> void:
+	_draw_centered_text_at(font, rect, text, font_size, color)
+
+
+func _draw_centered_text_at(font: Font, rect: Rect2, text: String, font_size: int, color: Color) -> void:
 	var text_size := font.get_string_size(text, HORIZONTAL_ALIGNMENT_CENTER, -1, font_size)
 	var text_position := Vector2(rect.position.x, rect.position.y + rect.size.y * 0.5 + text_size.y * 0.35)
 	draw_string(font, text_position, text, HORIZONTAL_ALIGNMENT_CENTER, rect.size.x, font_size, color)

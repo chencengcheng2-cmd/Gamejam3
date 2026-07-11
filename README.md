@@ -102,7 +102,7 @@ The prototype uses program-drawn icons. The README images below match the curren
 | <img src="docs/assets/icons/player.svg" width="48" alt="Player"> | Player | The blue `P` marker shows the current player position. |
 | <img src="docs/assets/icons/altar.svg" width="48" alt="Altar"> | Altar | The purple diamond `A`. Move onto it and press `Enter` to reallocate stats. |
 | <img src="docs/assets/icons/treasure.svg" width="48" alt="Treasure"> | Treasure | The gold star `T`. Move onto it to win. |
-| <img src="docs/assets/icons/bonus-treasure.svg" width="48" alt="Bonus treasure"> | Bonus treasure | The green `B`. Move onto it and press `Enter` to gain unused points. |
+| <img src="docs/assets/icons/bonus-treasure.svg" width="48" alt="Bonus treasure"> | Bonus treasure | The green `B` shows its point value underneath. Move onto it and press `Enter` to gain those unused points. |
 | <img src="docs/assets/icons/mine.svg" width="48" alt="Mine"> | Mine | The black `M`. Clicking reveals it safely; moving onto it costs Defense. |
 
 ## Clue Number Textures
@@ -124,6 +124,7 @@ Clue numbers appear on revealed normal cells. They tell you how many mines are i
 - More mines are placed around the treasure area.
 - Bonus treasures are placed across the map to give the player more altar-exchange points.
 - The map currently generates 16 altars.
+- The map currently generates 26 bonus treasures.
 - Altars are distributed by map regions for a more even spread, and each can be used once.
 
 ## Current Prototype Scope
