@@ -1,7 +1,7 @@
 extends Control
 
-const GRID_SIZE := 19
-const CENTER := Vector2i(9, 9)
+const GRID_SIZE := 25
+const CENTER := Vector2i(12, 12)
 const START_MOVES := 15
 const START_VISION := 15
 const START_DEFENSE := 3
@@ -313,7 +313,7 @@ func _generate_map_once() -> void:
 
 func _random_treasure_cell() -> Vector2i:
 	var candidates := _candidate_cells(func(pos: Vector2i) -> bool:
-		return pos != CENTER and _chebyshev(pos, CENTER) >= 5
+		return pos != CENTER and _manhattan(pos, CENTER) >= 20
 	)
 	return candidates[rng.randi_range(0, candidates.size() - 1)]
 

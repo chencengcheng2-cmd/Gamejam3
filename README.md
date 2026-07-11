@@ -2,7 +2,7 @@
 
 A Godot 4 prototype that combines classic Minesweeper logic with a moving character, limited vision clicks, limited movement, defense, one-use altars, bonus treasures, and a final treasure goal.
 
-The player starts at the center of a 19 x 19 hidden map. Click hidden cells to spend Vision and reveal information like Minesweeper. Move the player through revealed or risky territory, collect bonus treasures for points, use altars to exchange stats, and physically reach the treasure cell to win.
+The player starts at the center of a 25 x 25 hidden map. Click hidden cells to spend Vision and reveal information like Minesweeper. Move the player through revealed or risky territory, collect bonus treasures for points, use altars to exchange stats, and physically reach the treasure cell to win.
 
 ## How To Run
 
@@ -26,9 +26,9 @@ Vision can reveal the treasure location, but revealing it does not win the game.
 
 ## Core Rules
 
-- The map is 19 x 19.
-- The player starts at `(9, 9)`.
-- The treasure spawns away from the center, but it does not have to be on the map edge.
+- The map is 25 x 25.
+- The player starts at `(12, 12)`.
+- The treasure spawns at least 20 movement steps from the center, but it does not have to be on the map edge.
 - The map contains mines, treasure, altars, and bonus treasures.
 - Clicking a hidden cell costs 1 Vision.
 - Moving 1 cell costs 1 Move.
@@ -98,7 +98,7 @@ The prototype uses program-drawn icons. The README images below match the curren
 | --- | --- | --- |
 | <img src="docs/assets/icons/hidden-cell.svg" width="48" alt="Hidden cell"> | Hidden cell | An unexplored tile. Click it to spend Vision and reveal it. |
 | <img src="docs/assets/icons/revealed-cell.svg" width="48" alt="Revealed cell"> | Revealed normal cell | A revealed floor tile. It may show a mine clue number. |
-| <img src="docs/assets/icons/start-cell.svg" width="48" alt="Start cell"> | Start cell | The center spawn area. The player starts at `(9, 9)`. |
+| <img src="docs/assets/icons/start-cell.svg" width="48" alt="Start cell"> | Start cell | The center spawn area. The player starts at `(12, 12)`. |
 | <img src="docs/assets/icons/player.svg" width="48" alt="Player"> | Player | The blue `P` marker shows the current player position. |
 | <img src="docs/assets/icons/altar.svg" width="48" alt="Altar"> | Altar | The purple diamond `A`. Move onto it and press `Enter` to reallocate stats. |
 | <img src="docs/assets/icons/treasure.svg" width="48" alt="Treasure"> | Treasure | The gold star `T`. Move onto it to win. |
@@ -122,7 +122,7 @@ Rare revealed blank cells may show an arrow (`^`, `v`, `<`, or `>`). These arrow
 
 - The game creates a mine-free route from the start to the treasure to avoid impossible maps.
 - The map currently generates 68 mines.
-- The treasure appears away from the center and may appear inside the map, not only on the edge.
+- The treasure appears at least 20 movement steps from the center and may appear inside the map, not only on the edge.
 - More mines are placed around the treasure area.
 - Bonus treasures are placed across the map to give the player more altar-exchange points.
 - The map currently generates 16 altars.
