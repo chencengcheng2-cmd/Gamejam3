@@ -39,6 +39,7 @@ Vision can reveal the treasure location, but revealing it does not win the game.
 - Moving onto a bonus treasure grants unused points.
 - Moving onto an unused altar lets the player reallocate stats.
 - Each altar can be used once.
+- All altar locations are visible from the start.
 
 ## Minesweeper Reveal
 

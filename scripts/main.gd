@@ -324,6 +324,7 @@ func _place_altars() -> void:
 			break
 		if _is_far_from_existing(pos, altar_positions, 4):
 			_cell(pos).type = CELL_ALTAR
+			_cell(pos).revealed = true
 			altar_positions.append(pos)
 
 
