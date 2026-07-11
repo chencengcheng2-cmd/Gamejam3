@@ -28,7 +28,7 @@ Vision can reveal the treasure location, but revealing it does not win the game.
 
 - The map is 19 x 19.
 - The player starts at `(9, 9)`.
-- The treasure spawns on a random edge cell.
+- The treasure spawns away from the center, but it does not have to be on the map edge.
 - The map contains mines, treasure, altars, and bonus treasures.
 - Clicking a hidden cell costs 1 Vision.
 - Moving 1 cell costs 1 Move.
@@ -122,7 +122,7 @@ Rare revealed blank cells may show an arrow (`^`, `v`, `<`, or `>`). These arrow
 
 - The game creates a mine-free route from the start to the treasure to avoid impossible maps.
 - The map currently generates 68 mines.
-- The treasure appears on the map edge.
+- The treasure appears away from the center and may appear inside the map, not only on the edge.
 - More mines are placed around the treasure area.
 - Bonus treasures are placed across the map to give the player more altar-exchange points.
 - The map currently generates 16 altars.

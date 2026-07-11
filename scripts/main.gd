@@ -301,7 +301,7 @@ func _generate_map_once() -> void:
 		grid.append(row)
 
 	_cell(CENTER).type = CELL_START
-	treasure_pos = _random_edge_cell()
+	treasure_pos = _random_treasure_cell()
 	_cell(treasure_pos).type = CELL_TREASURE
 
 	_place_altars()
@@ -311,16 +311,11 @@ func _generate_map_once() -> void:
 	_calculate_treasure_arrows()
 
 
-func _random_edge_cell() -> Vector2i:
-	var edge := rng.randi_range(0, 3)
-	match edge:
-		0:
-			return Vector2i(0, rng.randi_range(0, GRID_SIZE - 1))
-		1:
-			return Vector2i(GRID_SIZE - 1, rng.randi_range(0, GRID_SIZE - 1))
-		2:
-			return Vector2i(rng.randi_range(0, GRID_SIZE - 1), 0)
-	return Vector2i(rng.randi_range(0, GRID_SIZE - 1), GRID_SIZE - 1)
+func _random_treasure_cell() -> Vector2i:
+	var candidates := _candidate_cells(func(pos: Vector2i) -> bool:
+		return pos != CENTER and _chebyshev(pos, CENTER) >= 5
+	)
+	return candidates[rng.randi_range(0, candidates.size() - 1)]
 
 
 func _place_altars() -> void:
