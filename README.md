@@ -117,6 +117,7 @@ Clue numbers appear on revealed normal cells. They tell you how many mines are i
 ## Map Generation
 
 - The game creates a mine-free route from the start to the treasure to avoid impossible maps.
+- The map currently generates 68 mines.
 - The treasure appears on the map edge.
 - More mines are placed around the treasure area.
 - Bonus treasures are placed across the map to give the player more altar-exchange points.
