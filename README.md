@@ -126,7 +126,7 @@ Rare revealed blank cells may show an arrow (`^`, `v`, `<`, or `>`). These arrow
 - More mines are placed around the treasure area.
 - Bonus treasures are placed across the map to give the player more altar-exchange points.
 - The map currently generates 16 altars.
-- The map currently generates 26 bonus treasures.
+- The map currently generates 20 bonus treasures.
 - A small number of revealed blank safe cells can show subtle arrows pointing toward the rough treasure direction.
 - Altars are distributed by map regions for a more even spread, and each can be used once.
 
