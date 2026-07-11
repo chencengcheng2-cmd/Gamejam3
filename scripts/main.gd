@@ -10,6 +10,7 @@ const ALTAR_COUNT := 16
 const BONUS_COUNT := 26
 const BONUS_MIN_POINTS := 1
 const BONUS_MAX_POINTS := 3
+const TREASURE_ARROW_CHANCE := 0.18
 const SIDE_WIDTH := 420.0
 
 const CELL_NORMAL := "normal"
@@ -292,7 +293,7 @@ func _generate_map_once() -> void:
 				"mine": false,
 				"revealed": false,
 				"number": 0,
-				"bonus_arrow": "",
+				"treasure_arrow": "",
 				"bonus_points": 0,
 				"used": false,
 				"collected": false
@@ -307,7 +308,7 @@ func _generate_map_once() -> void:
 	_place_bonus_treasures()
 	_place_mines()
 	_calculate_numbers()
-	_calculate_bonus_arrows()
+	_calculate_treasure_arrows()
 
 
 func _random_edge_cell() -> Vector2i:
@@ -461,35 +462,20 @@ func _calculate_numbers() -> void:
 			_cell(pos).number = count
 
 
-func _calculate_bonus_arrows() -> void:
+func _calculate_treasure_arrows() -> void:
 	for y in range(GRID_SIZE):
 		for x in range(GRID_SIZE):
 			var pos := Vector2i(x, y)
-			_cell(pos).bonus_arrow = ""
+			_cell(pos).treasure_arrow = ""
 			if _cell(pos).type != CELL_NORMAL or _cell(pos).mine or int(_cell(pos).number) != 0:
 				continue
-			var nearest := _nearest_uncollected_bonus(pos)
-			if nearest == Vector2i(-1, -1):
+			if rng.randf() > TREASURE_ARROW_CHANCE:
 				continue
-			var delta := nearest - pos
+			var delta := treasure_pos - pos
 			if abs(delta.x) >= abs(delta.y):
-				_cell(pos).bonus_arrow = ">" if delta.x > 0 else "<"
+				_cell(pos).treasure_arrow = ">" if delta.x > 0 else "<"
 			else:
-				_cell(pos).bonus_arrow = "v" if delta.y > 0 else "^"
-
-
-func _nearest_uncollected_bonus(from_pos: Vector2i) -> Vector2i:
-	var best_pos := Vector2i(-1, -1)
-	var best_distance := 999999
-	for pos in bonus_positions:
-		var cell := _cell(pos)
-		if cell.collected:
-			continue
-		var distance := _manhattan(from_pos, pos)
-		if distance < best_distance:
-			best_distance = distance
-			best_pos = pos
-	return best_pos
+				_cell(pos).treasure_arrow = "v" if delta.y > 0 else "^"
 
 
 func _validate_map() -> bool:
@@ -621,7 +607,6 @@ func _collect_bonus_treasure() -> void:
 	cell.bonus_points = 0
 	cell.type = CELL_NORMAL
 	_calculate_numbers()
-	_calculate_bonus_arrows()
 	_set_message("Collected bonus treasure: +%d unused point(s)." % gained_points)
 	_update_ui()
 	queue_redraw()
@@ -835,8 +820,8 @@ func _draw_cell_content(rect: Rect2, pos: Vector2i, font: Font) -> void:
 			var number: int = cell.number
 			if number > 0:
 				_draw_centered_text(font, rect, str(number), 18, _number_color(number))
-			elif not String(cell.bonus_arrow).is_empty():
-				_draw_centered_text(font, rect, String(cell.bonus_arrow), 18, Color(0.1, 0.55, 0.22))
+			elif not String(cell.treasure_arrow).is_empty():
+				_draw_centered_text(font, rect, String(cell.treasure_arrow), 18, Color(0.1, 0.55, 0.22))
 
 
 func _draw_mine(center: Vector2, radius: float) -> void:
