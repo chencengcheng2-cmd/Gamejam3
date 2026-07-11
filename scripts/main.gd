@@ -200,7 +200,7 @@ func _build_altar_panel(parent: VBoxContainer) -> void:
 	altar_box.add_child(altar_state_label)
 
 	moves_spin = _make_spin("Moves", 1, 50, 5, altar_box)
-	vision_spin = _make_spin("Vision", 0, 50, 1, altar_box)
+	vision_spin = _make_spin("Vision", 0, 50, 5, altar_box)
 	defense_spin = _make_spin("Defense", 0, 20, 1, altar_box)
 
 	altar_budget_label = Label.new()
@@ -673,6 +673,8 @@ func _validate_altar_build(build_moves: int, build_vision: int, build_defense: i
 		return "Moves must be between 1 and 50."
 	if build_vision < 0 or build_vision > 50:
 		return "Vision must be between 0 and 50."
+	if build_vision % 5 != 0:
+		return "Vision can only be changed in units of 5."
 	if build_defense < 0 or build_defense > 20:
 		return "Defense must be between 0 and 20."
 	return ""
