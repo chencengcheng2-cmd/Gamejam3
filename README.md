@@ -86,7 +86,7 @@ Each altar can only be used once. After applying a build, that altar becomes ina
 
 ## Bonus Treasures
 
-Bonus treasures are extra collectible rewards on the map. They are more common than before, and each gives 2-5 unused points when the player stands on the tile and presses `Enter`.
+Bonus treasures are extra collectible rewards on the map. They are more common than before, and each gives 1-3 unused points when the player stands on the tile and presses `Enter`.
 
 Unused points can be spent at altars together with the value of the player's current stats.
 
@@ -116,6 +116,8 @@ Clue numbers appear on revealed normal cells. They tell you how many mines are i
 | <img src="docs/assets/icons/clue-3.svg" width="48" alt="Clue 3"> | `3` | High danger. Three nearby mines. |
 | <img src="docs/assets/icons/clue-4.svg" width="48" alt="Clue 4 plus"> | `4+` | Very high danger. Four or more nearby mines. |
 
+Some revealed blank cells show an arrow (`^`, `v`, `<`, or `>`). These arrows point toward the nearest uncollected bonus treasure. They are guidance hints, not movement commands.
+
 ## Map Generation
 
 - The game creates a mine-free route from the start to the treasure to avoid impossible maps.
@@ -125,6 +127,7 @@ Clue numbers appear on revealed normal cells. They tell you how many mines are i
 - Bonus treasures are placed across the map to give the player more altar-exchange points.
 - The map currently generates 16 altars.
 - The map currently generates 26 bonus treasures.
+- Revealed blank safe cells can show arrows pointing toward the nearest uncollected bonus treasure.
 - Altars are distributed by map regions for a more even spread, and each can be used once.
 
 ## Current Prototype Scope
