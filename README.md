@@ -1,8 +1,8 @@
-# Minesweeper Exploration RPG
+# Minesweeper Treasure Explorer
 
-A 2D strategy exploration game made in Godot 4. The game combines minesweeper-style clues, grid movement, resource management, combat risk, and stat reallocation.
+A Godot 4 prototype that combines classic Minesweeper logic with a moving character, limited vision clicks, limited movement, defense, one-use altars, bonus treasures, and a final treasure goal.
 
-You begin at the center of a 19 x 19 map. Most of the map is hidden. Move through the grid, read clue numbers, fight enemies when necessary, use altars to rebuild your stats, and reach the treasure on the edge of the map before your moves run out.
+The player starts at the center of a 19 x 19 hidden map. Click hidden cells to spend Vision and reveal information like Minesweeper. Move the player through revealed or risky territory, collect bonus treasures for points, use altars to exchange stats, and physically reach the treasure cell to win.
 
 ## How To Run
 
@@ -10,115 +10,117 @@ Open this folder in Godot 4 and run `Main.tscn`.
 
 ## Controls
 
-- Move: arrow keys or `WASD`
-- Mouse move: click an adjacent grid cell
-- Open altar: stand on an altar and press `Enter`
-- Apply altar build and exit: press `Enter` again, or click `Apply`
-- Restart: press `R`, or click `New Map`
+- Reveal: click any hidden cell. This costs 1 Vision.
+- Move: arrow keys or `WASD`.
+- Mouse move: click a revealed adjacent cell.
+- Open altar: stand on an unused altar and press `Enter`.
+- Apply altar build and exit: press `Enter` again, or click `Apply`.
+- Restart: press `R`, or click `New Map`.
 
 ## Goal
 
-Find the treasure on the edge of the map and defeat the Treasure Guard.
+Find the treasure and move onto its tile.
 
-The Treasure Guard has 20 power. If your power is lower than 20 when you enter the treasure cell, you lose. If your power is at least 20, you win.
+Vision can reveal the treasure location, but revealing it does not win the game. The player must spend Moves and physically reach the treasure cell.
 
 ## Core Rules
 
 - The map is 19 x 19.
 - The player starts at `(9, 9)`.
 - The treasure spawns on a random edge cell.
-- Moving 1 cell costs 1 move.
-- If moves reach 0, the game ends in defeat.
-- Revealed normal cells show minesweeper-style clue numbers.
-- A clue number tells you how many enemies are in the 8 surrounding cells.
-- Clue numbers count enemies only. They do not count altars, treasure, or the player.
-- Enemies inside your revealed vision area show their icon and power.
+- The map contains mines, treasure, altars, and bonus treasures.
+- Clicking a hidden cell costs 1 Vision.
+- Moving 1 cell costs 1 Move.
+- If Moves reach 0, the game ends in defeat.
+- If Vision reaches 0, the player cannot reveal more hidden cells until gaining or exchanging for more Vision.
+- Clicking a mine reveals that mine, but does not reduce Defense.
+- Moving onto a mine reduces Defense by 1.
+- If Defense falls below 0, the game ends in defeat.
+- Moving onto a bonus treasure grants unused points.
+- Moving onto an unused altar lets the player reallocate stats.
+- Each altar can be used once.
+
+## Minesweeper Reveal
+
+Revealed normal cells show a clue number. The number tells how many mines are in the 8 surrounding cells.
+
+If the clicked cell has 0 surrounding mines, the game expands the reveal automatically, like classic Minesweeper. Nearby safe cells and border clue numbers are opened together.
+
+Special cells such as treasure, altars, and bonus treasures can be revealed by Vision, but their effects require movement:
+
+- Revealed treasure: shows the target location.
+- Revealed bonus treasure: shows where to move for points.
+- Revealed altar: shows where to move for stat exchange.
+- Revealed mine: shows a dangerous cell that costs Defense only if stepped on.
 
 ## Player Stats
 
-- Power: decides whether you can defeat an enemy.
-- Defense: decreases by 1 after each enemy you defeat.
-- Vision: controls which nearby cells are revealed.
-- Moves: your remaining movement resource.
-- Unused points: reward points that have not been converted into stats.
-- Exchange budget: the value of your current stats plus unused points.
+- Moves: remaining movement steps.
+- Vision: remaining reveal clicks.
+- Defense: mine-hit protection while moving.
+- Unused points: bonus treasure points that can be spent at altars.
+- Exchange budget: the value of current stats plus unused points.
 
-## Combat
+Initial stats:
 
-When you enter an enemy cell:
-
-- If your power is lower than the enemy power, you lose.
-- If your power is equal to or higher than the enemy power, you defeat the enemy.
-- Defeating an enemy gives reward points based on enemy level.
-- Defeating an enemy reduces defense by 1.
-- If defense falls below 0, you lose.
+- Moves: 15
+- Vision: 4
+- Defense: 3
 
 ## Altars
 
-Altars are visible from the start.
+Altars use the existing exchange-budget system. You can reduce stats you already have and move that value into other stats.
 
-At an altar, you can reallocate your current build. This is not just spending new reward points. You can reduce stats you already have and move that value into other stats.
-
-For example, even with 0 unused points, you can lower Power and use the released budget to increase Defense, Vision, or Moves.
+For example, even with 0 unused points, you can lower Defense and use that budget to increase Vision or Moves.
 
 Stat costs:
 
-- Power: 1 budget per point
 - Defense: 1 budget per point
-- Vision: starts at 4; each +1 costs 2 budget
+- Vision: each point costs 2 budget
 - Moves: every 5 moves costs 1 budget
 
-If a new build costs more than your exchange budget, the input will not increase. You can still reduce stats to free budget.
+Each altar can only be used once. After applying a build, that altar becomes inactive.
+
+## Bonus Treasures
+
+Bonus treasures are extra collectible rewards on the map. They are more common than before, and each gives 1-3 unused points when the player moves onto the tile.
+
+Unused points can be spent at altars together with the value of the player's current stats.
 
 ## Map Symbols And Visuals
 
-The prototype uses program-drawn icons. The README images below match the current in-game visual language.
+The prototype uses program-drawn icons. The README images below match the current visual language.
 
 | Image | Element | Meaning |
 | --- | --- | --- |
-| <img src="docs/assets/icons/hidden-cell.svg" width="48" alt="Hidden cell"> | Hidden cell | An unexplored tile. Its contents are unknown. |
-| <img src="docs/assets/icons/revealed-cell.svg" width="48" alt="Revealed cell"> | Revealed normal cell | A safe revealed floor tile. It can show a clue number. |
+| <img src="docs/assets/icons/hidden-cell.svg" width="48" alt="Hidden cell"> | Hidden cell | An unexplored tile. Click it to spend Vision and reveal it. |
+| <img src="docs/assets/icons/revealed-cell.svg" width="48" alt="Revealed cell"> | Revealed normal cell | A revealed floor tile. It may show a mine clue number. |
 | <img src="docs/assets/icons/start-cell.svg" width="48" alt="Start cell"> | Start cell | The center spawn area. The player starts at `(9, 9)`. |
 | <img src="docs/assets/icons/player.svg" width="48" alt="Player"> | Player | The blue `P` marker shows the current player position. |
-| <img src="docs/assets/icons/altar.svg" width="48" alt="Altar"> | Altar | The purple diamond `A`. Stand on it and press `Enter` to reallocate stats. |
-| <img src="docs/assets/icons/treasure.svg" width="48" alt="Treasure"> | Treasure | The gold star `T`. This is the final goal on the map edge. |
+| <img src="docs/assets/icons/altar.svg" width="48" alt="Altar"> | Altar | The purple diamond `A`. Move onto it and press `Enter` to reallocate stats. |
+| <img src="docs/assets/icons/treasure.svg" width="48" alt="Treasure"> | Treasure | The gold star `T`. Move onto it to win. |
+| <img src="docs/assets/icons/bonus-treasure.svg" width="48" alt="Bonus treasure"> | Bonus treasure | The green `B`. Move onto it to gain unused points. |
+| <img src="docs/assets/icons/mine.svg" width="48" alt="Mine"> | Mine | The black `M`. Clicking reveals it safely; moving onto it costs Defense. |
 
 ## Clue Number Textures
 
-Clue numbers appear on revealed normal cells. They tell you how many enemies are in the 8 surrounding cells.
+Clue numbers appear on revealed normal cells. They tell you how many mines are in the 8 surrounding cells.
 
 | Image | Number | Meaning |
 | --- | --- | --- |
-| <img src="docs/assets/icons/clue-1.svg" width="48" alt="Clue 1"> | `1` | Low danger. One nearby enemy. |
-| <img src="docs/assets/icons/clue-2.svg" width="48" alt="Clue 2"> | `2` | Medium danger. Two nearby enemies. |
-| <img src="docs/assets/icons/clue-3.svg" width="48" alt="Clue 3"> | `3` | High danger. Three nearby enemies. |
-| <img src="docs/assets/icons/clue-4.svg" width="48" alt="Clue 4 plus"> | `4+` | Very high danger. Four or more nearby enemies. |
-
-## Enemy Icons
-
-Enemies use different shapes, colors, letters, power ranges, and rewards.
-
-| Image | Enemy | Letter | Power | Reward | Texture Explanation |
-| --- | --- | --- | ---: | ---: | --- |
-| <img src="docs/assets/icons/lesser-foe.svg" width="48" alt="Lesser Foe"> | Lesser Foe | `e` | 2-4 | 1 | Small light-red circle. This is the safest enemy type and is common near the center and altars. |
-| <img src="docs/assets/icons/foe.svg" width="48" alt="Foe"> | Foe | `E` | 5-7 | 2 | Red circle with a white ring. A basic early-game combat target. |
-| <img src="docs/assets/icons/bandit.svg" width="48" alt="Bandit"> | Bandit | `B` | 8-10 | 3 | Orange-red triangle with a white slash. A mid-level threat. |
-| <img src="docs/assets/icons/raider.svg" width="48" alt="Raider"> | Raider | `R` | 11-13 | 5 | Dark-red diamond with a cross. A stronger enemy that gives a better reward. |
-| <img src="docs/assets/icons/armored-foe.svg" width="48" alt="Armored Foe"> | Armored Foe | `H` | 14-16 | 7 | Dark-red square armor icon. It represents a durable late-game enemy. |
-| <img src="docs/assets/icons/elite-foe.svg" width="48" alt="Elite Foe"> | Elite Foe | `X` | 17-19 | 9-10 | Black-red hexagon with a red ring. One of the most dangerous normal enemies. |
-| <img src="docs/assets/icons/treasure-guard.svg" width="48" alt="Treasure Guard"> | Treasure Guard | `G` | 20 | 0 | Black crown with a gold base. It guards the treasure and must be defeated to win. |
-
-The side panel contains an Enemy Key that shows each icon, power range, and reward.
+| <img src="docs/assets/icons/clue-1.svg" width="48" alt="Clue 1"> | `1` | Low danger. One nearby mine. |
+| <img src="docs/assets/icons/clue-2.svg" width="48" alt="Clue 2"> | `2` | Medium danger. Two nearby mines. |
+| <img src="docs/assets/icons/clue-3.svg" width="48" alt="Clue 3"> | `3` | High danger. Three nearby mines. |
+| <img src="docs/assets/icons/clue-4.svg" width="48" alt="Clue 4 plus"> | `4+` | Very high danger. Four or more nearby mines. |
 
 ## Map Generation
 
-- The game creates a hidden route from the start to the treasure to avoid impossible maps.
-- Around 112 enemies are generated by default.
-- Enemy strength generally increases with distance from the center.
-- Low-level enemies are more common near the center and around altars.
-- Some low-level enemies can appear in route and altar-adjacent safety areas.
-- The treasure area is more dangerous than the center.
+- The game creates a mine-free route from the start to the treasure to avoid impossible maps.
+- The treasure appears on the map edge.
+- More mines are placed around the treasure area.
+- Bonus treasures are placed across the map to give the player more altar-exchange points.
+- Altars are distributed across the map and each can be used once.
 
 ## Current Prototype Scope
 
-This prototype uses simple program-drawn shapes instead of external art assets. The focus is on testing the game rules, map generation, combat, movement pressure, clue reading, and altar stat exchange.
+This prototype uses simple program-drawn shapes instead of final art assets. The focus is on testing the hybrid rules: Minesweeper-style reveals, player movement, mine defense, bonus points, one-use altars, and treasure victory.

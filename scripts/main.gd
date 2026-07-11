@@ -2,46 +2,34 @@ extends Control
 
 const GRID_SIZE := 19
 const CENTER := Vector2i(9, 9)
-const START_ATTACK := 5
-const START_DEFENSE := 3
+const START_MOVES := 15
 const START_VISION := 4
-const START_MOVE := 15
-const TARGET_ENEMY_COUNT := 112
-const MIN_ENEMY_COUNT := 100
-const MAX_ENEMY_COUNT := 125
+const START_DEFENSE := 3
+const MINE_COUNT := 82
 const ALTAR_COUNT := 12
-const ALTAR_LOW_ENEMY_TARGET := 2
+const BONUS_COUNT := 18
+const BONUS_MIN_POINTS := 1
+const BONUS_MAX_POINTS := 3
 const SIDE_WIDTH := 420.0
 
-const CELL_TYPE_NORMAL := "normal"
-const CELL_TYPE_START := "start"
-const CELL_TYPE_ALTAR := "altar"
-const CELL_TYPE_TREASURE := "treasure"
-
-const ENEMY_TYPES := [
-	{"name": "Lesser Foe", "letter": "e", "min_power": 2, "max_power": 4, "min_reward": 1, "max_reward": 1, "color": Color(1.0, 0.42, 0.42)},
-	{"name": "Foe", "letter": "E", "min_power": 5, "max_power": 7, "min_reward": 2, "max_reward": 2, "color": Color(0.92, 0.12, 0.12)},
-	{"name": "Bandit", "letter": "B", "min_power": 8, "max_power": 10, "min_reward": 3, "max_reward": 3, "color": Color(0.95, 0.28, 0.08)},
-	{"name": "Raider", "letter": "R", "min_power": 11, "max_power": 13, "min_reward": 5, "max_reward": 5, "color": Color(0.58, 0.03, 0.03)},
-	{"name": "Armored Foe", "letter": "H", "min_power": 14, "max_power": 16, "min_reward": 7, "max_reward": 7, "color": Color(0.34, 0.0, 0.0)},
-	{"name": "Elite Foe", "letter": "X", "min_power": 17, "max_power": 19, "min_reward": 9, "max_reward": 10, "color": Color(0.14, 0.0, 0.0)}
-]
-const ENEMY_ICON_SCRIPT := preload("res://scripts/enemy_icon.gd")
+const CELL_NORMAL := "normal"
+const CELL_START := "start"
+const CELL_ALTAR := "altar"
+const CELL_TREASURE := "treasure"
+const CELL_BONUS := "bonus"
 
 var grid: Array = []
 var player_pos := CENTER
 var treasure_pos := Vector2i.ZERO
-var main_route: Array[Vector2i] = []
 var altar_positions: Array[Vector2i] = []
-var protected_cells := {}
+var bonus_positions: Array[Vector2i] = []
 var rng := RandomNumberGenerator.new()
 
-var attack := START_ATTACK
-var defense := START_DEFENSE
+var moves := START_MOVES
 var vision := START_VISION
-var movement_points := START_MOVE
-var reward_points := 0
-var earned_points_total := 0
+var defense := START_DEFENSE
+var unused_points := 0
+var total_bonus_points := 0
 var altar_exchange_pool := 0
 var altar_last_valid_build := {}
 var updating_altar_controls := false
@@ -56,10 +44,9 @@ var stats_label: Label
 var message_label: RichTextLabel
 var altar_panel: PanelContainer
 var altar_state_label: Label
-var attack_spin: SpinBox
-var defense_spin: SpinBox
+var moves_spin: SpinBox
 var vision_spin: SpinBox
-var move_spin: SpinBox
+var defense_spin: SpinBox
 var altar_budget_label: Label
 var apply_button: Button
 
@@ -82,7 +69,7 @@ func _input(event: InputEvent) -> void:
 			return
 		if game_over or grid.is_empty():
 			return
-		if altar_panel.visible or _cell(player_pos).type == CELL_TYPE_ALTAR:
+		if altar_panel.visible or _cell(player_pos).type == CELL_ALTAR:
 			_toggle_altar_panel()
 			get_viewport().set_input_as_handled()
 
@@ -92,9 +79,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		if event.keycode == KEY_R:
 			_new_game()
 			return
-		if game_over:
-			return
-		if altar_panel.visible:
+		if game_over or altar_panel.visible:
 			return
 		var direction := Vector2i.ZERO
 		match event.keycode:
@@ -115,7 +100,11 @@ func _gui_input(event: InputEvent) -> void:
 		if altar_panel.visible:
 			return
 		var cell := _screen_to_cell(event.position)
-		if _is_inside(cell) and _manhattan(player_pos, cell) == 1:
+		if not _is_inside(cell):
+			return
+		if not _cell(cell).revealed:
+			_probe_cell(cell)
+		elif _manhattan(player_pos, cell) == 1:
 			_try_move(cell)
 
 
@@ -142,7 +131,7 @@ func _build_ui() -> void:
 	side_scroll.add_child(side_box)
 
 	var title := Label.new()
-	title.text = "Minesweeper RPG"
+	title.text = "Minesweeper Treasure"
 	title.add_theme_font_size_override("font_size", 24)
 	side_box.add_child(title)
 
@@ -158,13 +147,42 @@ func _build_ui() -> void:
 	message_label = RichTextLabel.new()
 	message_label.bbcode_enabled = true
 	message_label.fit_content = false
-	message_label.custom_minimum_size = Vector2(0, 112)
+	message_label.custom_minimum_size = Vector2(0, 130)
 	side_box.add_child(message_label)
 
-	_build_enemy_legend(side_box)
+	_build_symbol_key(side_box)
+	_build_altar_panel(side_box)
+	_layout_ui()
 
+
+func _build_symbol_key(parent: VBoxContainer) -> void:
+	var key_panel := PanelContainer.new()
+	parent.add_child(key_panel)
+	var key_box := VBoxContainer.new()
+	key_box.add_theme_constant_override("separation", 5)
+	key_panel.add_child(key_box)
+
+	var key_title := Label.new()
+	key_title.text = "Map Key"
+	key_title.add_theme_font_size_override("font_size", 16)
+	key_box.add_child(key_title)
+
+	for row in [
+		["P", "Player"],
+		["A", "Altar, usable once"],
+		["T", "Treasure, move here to win"],
+		["B", "Bonus treasure, move here for points"],
+		["M", "Mine, moving here costs defense"],
+		["0-8", "Mine clue number"]
+	]:
+		var label := Label.new()
+		label.text = "%s  %s" % [row[0], row[1]]
+		key_box.add_child(label)
+
+
+func _build_altar_panel(parent: VBoxContainer) -> void:
 	altar_panel = PanelContainer.new()
-	side_box.add_child(altar_panel)
+	parent.add_child(altar_panel)
 	var altar_box := VBoxContainer.new()
 	altar_box.add_theme_constant_override("separation", 6)
 	altar_panel.add_child(altar_box)
@@ -178,10 +196,9 @@ func _build_ui() -> void:
 	altar_state_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	altar_box.add_child(altar_state_label)
 
-	attack_spin = _make_spin("Power", 0, 20, 1, altar_box)
+	moves_spin = _make_spin("Moves", 1, 50, 5, altar_box)
+	vision_spin = _make_spin("Vision", 0, 50, 1, altar_box)
 	defense_spin = _make_spin("Defense", 0, 20, 1, altar_box)
-	vision_spin = _make_spin("Vision", 4, 8, 1, altar_box)
-	move_spin = _make_spin("Moves", 1, 50, 5, altar_box)
 
 	altar_budget_label = Label.new()
 	altar_budget_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -198,52 +215,8 @@ func _build_ui() -> void:
 	close_button.pressed.connect(func() -> void: altar_panel.visible = false)
 	altar_buttons.add_child(close_button)
 
-	for spin in [attack_spin, defense_spin, vision_spin, move_spin]:
+	for spin in [moves_spin, vision_spin, defense_spin]:
 		spin.value_changed.connect(func(_value: float) -> void: _on_altar_spin_changed())
-
-	_layout_ui()
-
-
-func _build_enemy_legend(parent: VBoxContainer) -> void:
-	var legend_panel := PanelContainer.new()
-	parent.add_child(legend_panel)
-	var legend_box := VBoxContainer.new()
-	legend_box.add_theme_constant_override("separation", 5)
-	legend_panel.add_child(legend_box)
-
-	var legend_title := Label.new()
-	legend_title.text = "Enemy Key"
-	legend_title.add_theme_font_size_override("font_size", 16)
-	legend_box.add_child(legend_title)
-
-	for index in range(ENEMY_TYPES.size()):
-		var template: Dictionary = ENEMY_TYPES[index]
-		_add_enemy_legend_row(legend_box, index + 1, template.name, template.letter, template.color, "%d-%d" % [template.min_power, template.max_power], _reward_text(template))
-	_add_enemy_legend_row(legend_box, 7, "Treasure Guard", "G", Color(0.02, 0.02, 0.02), "20", "0")
-
-
-func _reward_text(template: Dictionary) -> String:
-	if int(template.min_reward) == int(template.max_reward):
-		return str(template.min_reward)
-	return "%d-%d" % [template.min_reward, template.max_reward]
-
-
-func _add_enemy_legend_row(parent: VBoxContainer, level: int, enemy_name: String, letter: String, color: Color, power_text: String, reward_text: String) -> void:
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 8)
-	parent.add_child(row)
-
-	var icon := Control.new()
-	icon.set_script(ENEMY_ICON_SCRIPT)
-	icon.custom_minimum_size = Vector2(28, 28)
-	icon.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
-	icon.configure(level, letter, color)
-	row.add_child(icon)
-
-	var label := Label.new()
-	label.text = "%s  Pwr %s  Reward %s" % [enemy_name, power_text, reward_text]
-	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	row.add_child(label)
 
 
 func _make_spin(label_text: String, min_value: int, max_value: int, step: int, parent: VBoxContainer) -> SpinBox:
@@ -281,17 +254,16 @@ func _new_game() -> void:
 	game_over = false
 	game_won = false
 	player_pos = CENTER
-	attack = START_ATTACK
-	defense = START_DEFENSE
+	moves = START_MOVES
 	vision = START_VISION
-	movement_points = START_MOVE
-	reward_points = 0
-	earned_points_total = 0
+	defense = START_DEFENSE
+	unused_points = 0
+	total_bonus_points = 0
 	altar_exchange_pool = 0
 	_generate_valid_map()
-	_reveal_from_player()
+	_cell(player_pos).revealed = true
 	altar_panel.visible = false
-	_set_message("Start from the center. Use clue numbers to judge danger, find altars, and reach the edge treasure.")
+	_set_message("Explore with vision clicks, move carefully, collect bonuses, use each altar once, and reach the treasure.")
 	_update_ui()
 	queue_redraw()
 
@@ -306,33 +278,30 @@ func _generate_valid_map() -> void:
 
 func _generate_map_once() -> void:
 	grid.clear()
-	main_route.clear()
 	altar_positions.clear()
-	protected_cells.clear()
+	bonus_positions.clear()
 
 	for y in range(GRID_SIZE):
 		var row := []
 		for x in range(GRID_SIZE):
 			row.append({
-				"type": CELL_TYPE_NORMAL,
-				"enemy": null,
+				"type": CELL_NORMAL,
+				"mine": false,
 				"revealed": false,
-				"number": 0
+				"number": 0,
+				"bonus_points": 0,
+				"used": false,
+				"collected": false
 			})
 		grid.append(row)
 
-	_cell(CENTER).type = CELL_TYPE_START
+	_cell(CENTER).type = CELL_START
 	treasure_pos = _random_edge_cell()
-	_cell(treasure_pos).type = CELL_TYPE_TREASURE
-	_cell(treasure_pos).enemy = _make_guard()
-
-	main_route = _build_hidden_route(CENTER, treasure_pos)
-	for pos in main_route:
-		protected_cells[pos] = true
-	protected_cells[CENTER] = true
+	_cell(treasure_pos).type = CELL_TREASURE
 
 	_place_altars()
-	_place_enemies()
+	_place_bonus_treasures()
+	_place_mines()
 	_calculate_numbers()
 
 
@@ -348,6 +317,64 @@ func _random_edge_cell() -> Vector2i:
 	return Vector2i(rng.randi_range(0, GRID_SIZE - 1), GRID_SIZE - 1)
 
 
+func _place_altars() -> void:
+	var candidates := _candidate_cells(func(pos: Vector2i) -> bool: return pos != CENTER and pos != treasure_pos)
+	for pos in candidates:
+		if altar_positions.size() >= ALTAR_COUNT:
+			break
+		if _is_far_from_existing(pos, altar_positions, 4):
+			_cell(pos).type = CELL_ALTAR
+			altar_positions.append(pos)
+
+
+func _place_bonus_treasures() -> void:
+	var candidates := _candidate_cells(func(pos: Vector2i) -> bool: return _cell(pos).type == CELL_NORMAL and _manhattan(pos, CENTER) > 2)
+	for pos in candidates:
+		if bonus_positions.size() >= BONUS_COUNT:
+			break
+		_cell(pos).type = CELL_BONUS
+		_cell(pos).bonus_points = rng.randi_range(BONUS_MIN_POINTS, BONUS_MAX_POINTS)
+		bonus_positions.append(pos)
+
+
+func _place_mines() -> void:
+	var safe_route := _build_hidden_route(CENTER, treasure_pos)
+	var route_lookup := {}
+	for pos in safe_route:
+		route_lookup[pos] = true
+
+	var candidates: Array[Vector2i] = []
+	for y in range(GRID_SIZE):
+		for x in range(GRID_SIZE):
+			var pos := Vector2i(x, y)
+			if _can_have_mine(pos, route_lookup):
+				candidates.append(pos)
+	candidates.shuffle()
+
+	for pos in _treasure_mine_candidates():
+		if _mine_count() >= MINE_COUNT:
+			return
+		if _can_have_mine(pos, route_lookup) and not _cell(pos).mine:
+			_cell(pos).mine = true
+
+	for pos in candidates:
+		if _mine_count() >= MINE_COUNT:
+			break
+		if not _cell(pos).mine:
+			_cell(pos).mine = true
+
+
+func _treasure_mine_candidates() -> Array[Vector2i]:
+	var candidates: Array[Vector2i] = []
+	for dy in range(-3, 4):
+		for dx in range(-3, 4):
+			var pos := treasure_pos + Vector2i(dx, dy)
+			if _is_inside(pos) and pos != treasure_pos:
+				candidates.append(pos)
+	candidates.shuffle()
+	return candidates
+
+
 func _build_hidden_route(from_pos: Vector2i, to_pos: Vector2i) -> Array[Vector2i]:
 	var route: Array[Vector2i] = [from_pos]
 	var current := from_pos
@@ -359,43 +386,11 @@ func _build_hidden_route(from_pos: Vector2i, to_pos: Vector2i) -> Array[Vector2i
 			options.append(Vector2i(signi(to_pos.x - current.x), 0))
 		if current.y != to_pos.y:
 			options.append(Vector2i(0, signi(to_pos.y - current.y)))
-		if rng.randf() < 0.22:
-			for direction in [Vector2i.UP, Vector2i.DOWN, Vector2i.LEFT, Vector2i.RIGHT]:
-				var next: Vector2i = current + direction
-				if _is_inside(next) and _chebyshev(next, CENTER) >= 2 and _manhattan(next, to_pos) <= _manhattan(current, to_pos) + 1:
-					options.append(direction)
 		var chosen: Vector2i = options[rng.randi_range(0, options.size() - 1)]
-		var next_pos := current + chosen
-		if _is_inside(next_pos):
-			current = next_pos
-			if not route.has(current):
-				route.append(current)
+		current += chosen
+		if _is_inside(current) and not route.has(current):
+			route.append(current)
 	return route
-
-
-func _place_altars() -> void:
-	var altars: Array[Vector2i] = []
-	_place_altars_for_rule(altars, 1, func(pos: Vector2i) -> bool: return _chebyshev(pos, treasure_pos) >= 3 and _chebyshev(pos, treasure_pos) <= 4)
-	_place_altars_for_rule(altars, 3, func(pos: Vector2i) -> bool: return _manhattan(pos, CENTER) <= 6)
-	_place_altars_for_rule(altars, 5, func(pos: Vector2i) -> bool: return _chebyshev(pos, CENTER) >= 4 and _chebyshev(pos, CENTER) <= 6)
-	_place_altars_for_rule(altars, 3, func(pos: Vector2i) -> bool: return _chebyshev(pos, CENTER) >= 7 and _chebyshev(pos, CENTER) <= 8)
-	_place_altars_for_rule(altars, ALTAR_COUNT - altars.size(), func(_pos: Vector2i) -> bool: return true)
-
-	for altar in altars:
-		_cell(altar).type = CELL_TYPE_ALTAR
-		_cell(altar).revealed = true
-		protected_cells[altar] = true
-		for neighbor in _orthogonal_neighbors(altar):
-			protected_cells[neighbor] = true
-	altar_positions = altars.duplicate()
-
-
-func _place_altars_for_rule(altars: Array[Vector2i], desired_count: int, rule: Callable) -> void:
-	var placed := 0
-	while placed < desired_count and altars.size() < ALTAR_COUNT:
-		if not _try_place_altar_from_candidates(_candidate_cells(rule), altars):
-			return
-		placed += 1
 
 
 func _candidate_cells(rule: Callable) -> Array[Vector2i]:
@@ -403,164 +398,22 @@ func _candidate_cells(rule: Callable) -> Array[Vector2i]:
 	for y in range(GRID_SIZE):
 		for x in range(GRID_SIZE):
 			var pos := Vector2i(x, y)
-			if pos == CENTER or pos == treasure_pos:
-				continue
-			if _cell(pos).type != CELL_TYPE_NORMAL:
-				continue
-			if not rule.call(pos):
-				continue
-			candidates.append(pos)
-	candidates.shuffle()
-	return candidates
-
-
-func _try_place_altar_from_candidates(candidates: Array[Vector2i], altars: Array[Vector2i]) -> bool:
-	for pos in candidates:
-		var far_enough := true
-		for altar in altars:
-			if _manhattan(pos, altar) < 4:
-				far_enough = false
-				break
-		if far_enough:
-			altars.append(pos)
-			return true
-	return false
-
-
-func _place_enemies() -> void:
-	_place_altar_low_enemies()
-
-	var candidates: Array[Vector2i] = []
-	for y in range(GRID_SIZE):
-		for x in range(GRID_SIZE):
-			var pos := Vector2i(x, y)
-			if _can_have_enemy(pos):
-				candidates.append(pos)
-	candidates.shuffle()
-
-	for pos in candidates:
-		if _enemy_count() >= TARGET_ENEMY_COUNT:
-			break
-		var probability := _enemy_probability(pos)
-		if rng.randf() <= probability:
-			_cell(pos).enemy = _make_enemy(pos)
-
-	candidates.shuffle()
-	for pos in candidates:
-		if _enemy_count() >= TARGET_ENEMY_COUNT:
-			break
-		if _cell(pos).enemy == null:
-			_cell(pos).enemy = _make_enemy(pos)
-
-
-func _place_altar_low_enemies() -> void:
-	for altar in altar_positions:
-		var candidates := _altar_enemy_candidates(altar)
-		var placed := 0
-		for pos in candidates:
-			if placed >= ALTAR_LOW_ENEMY_TARGET:
-				break
-			if _cell(pos).enemy != null:
-				continue
-			_cell(pos).enemy = _make_enemy_at_level(1 if rng.randf() < 0.75 else 2)
-			placed += 1
-
-
-func _altar_enemy_candidates(altar: Vector2i) -> Array[Vector2i]:
-	var candidates: Array[Vector2i] = []
-	for dy in range(-2, 3):
-		for dx in range(-2, 3):
-			if dx == 0 and dy == 0:
-				continue
-			var pos := altar + Vector2i(dx, dy)
-			if not _is_inside(pos):
-				continue
-			if _chebyshev(pos, altar) > 2:
-				continue
-			if _can_have_enemy(pos):
+			if rule.call(pos):
 				candidates.append(pos)
 	candidates.shuffle()
 	return candidates
 
 
-func _can_have_enemy(pos: Vector2i) -> bool:
+func _can_have_mine(pos: Vector2i, route_lookup: Dictionary) -> bool:
 	if pos == CENTER or pos == treasure_pos:
 		return false
-	if _cell(pos).type != CELL_TYPE_NORMAL:
+	if _chebyshev(pos, CENTER) <= 1:
+		return false
+	if route_lookup.has(pos):
+		return false
+	if _cell(pos).type == CELL_ALTAR or _cell(pos).type == CELL_BONUS:
 		return false
 	return true
-
-
-func _enemy_probability(pos: Vector2i) -> float:
-	var radius := _chebyshev(pos, CENTER)
-	var probability := 0.0
-	if radius <= 1:
-		probability = 0.0
-	elif radius <= 3:
-		probability = rng.randf_range(0.08, 0.12)
-	elif radius == 4:
-		probability = rng.randf_range(0.15, 0.18)
-	elif radius <= 6:
-		probability = rng.randf_range(0.22, 0.30)
-	elif radius <= 8:
-		probability = rng.randf_range(0.32, 0.40)
-	else:
-		probability = rng.randf_range(0.42, 0.50)
-	if _chebyshev(pos, treasure_pos) <= 3:
-		probability += 0.15
-	return clampf(probability, 0.0, 0.75)
-
-
-func _make_enemy(pos: Vector2i) -> Dictionary:
-	if _is_low_level_only_cell(pos):
-		return _make_enemy_at_level(1 if rng.randf() < 0.75 else 2)
-	var radius := _chebyshev(pos, CENTER)
-	var level := 1
-	if radius <= 3:
-		level = 1
-	elif radius == 4:
-		level = 2
-	elif radius <= 6:
-		level = 3
-	elif radius <= 8:
-		level = 4
-	else:
-		level = 5
-	if _chebyshev(pos, treasure_pos) <= 3:
-		level += 1
-	var variation: int = [-1, 0, 0, 1][rng.randi_range(0, 3)]
-	if level <= 3 and rng.randf() < 0.35:
-		variation = -1
-	level += variation
-	level = clampi(level, 1, 6)
-	return _make_enemy_at_level(level)
-
-
-func _is_low_level_only_cell(pos: Vector2i) -> bool:
-	return protected_cells.has(pos) or _chebyshev(pos, CENTER) <= 1
-
-
-func _make_enemy_at_level(level: int) -> Dictionary:
-	var template: Dictionary = ENEMY_TYPES[level - 1]
-	return {
-		"name": template.name,
-		"letter": template.letter,
-		"power": rng.randi_range(template.min_power, template.max_power),
-		"reward": rng.randi_range(template.min_reward, template.max_reward),
-		"level": level,
-		"color": template.color
-	}
-
-
-func _make_guard() -> Dictionary:
-	return {
-		"name": "Treasure Guard",
-		"letter": "G",
-		"power": 20,
-		"reward": 0,
-		"level": 7,
-		"color": Color(0.02, 0.02, 0.02)
-	}
 
 
 func _calculate_numbers() -> void:
@@ -569,44 +422,19 @@ func _calculate_numbers() -> void:
 			var pos := Vector2i(x, y)
 			var count := 0
 			for neighbor in _all_neighbors(pos):
-				if _cell(neighbor).enemy != null:
+				if _cell(neighbor).mine:
 					count += 1
 			_cell(pos).number = count
 
 
 func _validate_map() -> bool:
-	if _enemy_count() < MIN_ENEMY_COUNT or _enemy_count() > MAX_ENEMY_COUNT:
+	if _mine_count() != MINE_COUNT:
 		return false
-	if _reachable_altars(5) < 1:
+	if altar_positions.size() < ALTAR_COUNT:
 		return false
-	if _reachable_altars(8) < 2:
+	if bonus_positions.size() < BONUS_COUNT:
 		return false
-	if not _path_exists(CENTER, treasure_pos):
-		return false
-	if _treasure_nearby_altars() < 1:
-		return false
-	return true
-
-
-func _reachable_altars(limit: int) -> int:
-	var visited := {CENTER: 0}
-	var queue: Array[Vector2i] = [CENTER]
-	var count := 0
-	while not queue.is_empty():
-		var current: Vector2i = queue.pop_front()
-		var distance: int = visited[current]
-		if distance > limit:
-			continue
-		if _cell(current).type == CELL_TYPE_ALTAR:
-			count += 1
-		for neighbor in _orthogonal_neighbors(current):
-			if visited.has(neighbor):
-				continue
-			if _cell(neighbor).enemy != null and int(_cell(neighbor).enemy.level) > 2:
-				continue
-			visited[neighbor] = distance + 1
-			queue.append(neighbor)
-	return count
+	return _path_exists(CENTER, treasure_pos)
 
 
 func _path_exists(from_pos: Vector2i, to_pos: Vector2i) -> bool:
@@ -619,82 +447,116 @@ func _path_exists(from_pos: Vector2i, to_pos: Vector2i) -> bool:
 		for neighbor in _orthogonal_neighbors(current):
 			if visited.has(neighbor):
 				continue
-			if neighbor != to_pos and _cell(neighbor).enemy != null and int(_cell(neighbor).enemy.level) > 2:
+			if _cell(neighbor).mine:
 				continue
 			visited[neighbor] = true
 			queue.append(neighbor)
 	return false
 
 
-func _treasure_nearby_altars() -> int:
-	var count := 0
-	for y in range(GRID_SIZE):
-		for x in range(GRID_SIZE):
-			var pos := Vector2i(x, y)
-			if _cell(pos).type == CELL_TYPE_ALTAR and _chebyshev(pos, treasure_pos) >= 3 and _chebyshev(pos, treasure_pos) <= 4:
-				count += 1
-	return count
-
-
-func _try_move(target: Vector2i) -> void:
-	if not _is_inside(target):
+func _probe_cell(pos: Vector2i) -> void:
+	if vision <= 0:
+		_set_message("No vision clicks left. Move to bonuses or use an altar.")
 		return
-	if _manhattan(player_pos, target) != 1:
+	if _cell(pos).revealed:
 		return
-	movement_points -= 1
-	player_pos = target
-	_reveal_from_player()
+	vision -= 1
 
-	if _remaining_moves() <= 0:
-		_fail("You ran out of moves.")
-		return
-
-	var cell := _cell(player_pos)
-	if cell.enemy != null:
-		_resolve_combat(cell.enemy)
-		if game_over:
-			return
-		cell.enemy = null
-
-	if cell.type == CELL_TYPE_TREASURE:
-		_win("You defeated the Treasure Guard and claimed the treasure.")
-	elif cell.type == CELL_TYPE_ALTAR:
-		_set_message("You reached an altar. Press Enter to open it; press Enter again to apply and leave.")
+	if _cell(pos).mine:
+		_cell(pos).revealed = true
+		_set_message("Mine revealed at (%d, %d). Vision click does not cost defense." % [pos.x, pos.y])
+	elif _cell(pos).number == 0 and _cell(pos).type == CELL_NORMAL:
+		_flood_reveal(pos)
+		_set_message("Opened a safe area from (%d, %d)." % [pos.x, pos.y])
 	else:
-		altar_panel.visible = false
-		_set_message("Moved to (%d, %d). Read the clue numbers before choosing the next route." % [player_pos.x, player_pos.y])
+		_cell(pos).revealed = true
+		_set_message("Revealed (%d, %d)." % [pos.x, pos.y])
 
+	if vision <= 0:
+		_set_message(message_label.text + "\nNo vision clicks remain.")
 	_update_ui()
 	queue_redraw()
 
 
-func _resolve_combat(enemy: Dictionary) -> void:
-	if enemy.name == "Treasure Guard":
-		if attack < enemy.power:
-			_fail("The Treasure Guard has 20 power. Your power is too low.")
+func _flood_reveal(start: Vector2i) -> void:
+	var queue: Array[Vector2i] = [start]
+	var visited := {start: true}
+	while not queue.is_empty():
+		var current: Vector2i = queue.pop_front()
+		_cell(current).revealed = true
+		if _cell(current).mine or _cell(current).number != 0:
+			continue
+		for neighbor in _all_neighbors(current):
+			if visited.has(neighbor):
+				continue
+			if _cell(neighbor).mine:
+				continue
+			visited[neighbor] = true
+			_cell(neighbor).revealed = true
+			if _cell(neighbor).number == 0 and _cell(neighbor).type == CELL_NORMAL:
+				queue.append(neighbor)
+
+
+func _try_move(target: Vector2i) -> void:
+	if not _is_inside(target) or _manhattan(player_pos, target) != 1:
+		return
+	if moves <= 0:
+		_fail("You ran out of moves.")
 		return
 
-	if attack < enemy.power:
-		_fail("You encountered %s. Enemy power %d is higher than your power %d." % [enemy.name, enemy.power, attack])
-		return
+	moves -= 1
+	player_pos = target
+	_cell(player_pos).revealed = true
 
-	reward_points += enemy.reward
-	earned_points_total += enemy.reward
-	defense -= 1
-	if defense < 0:
-		_fail("Defense fell below 0 after defeating %s." % enemy.name)
+	if _cell(player_pos).mine:
+		defense -= 1
+		_cell(player_pos).mine = false
+		_calculate_numbers()
+		if defense < 0:
+			_fail("You stepped on a mine and defense fell below 0.")
+			return
+		_set_message("Stepped on a mine. Defense -1.")
+	else:
+		_handle_current_cell()
+
+	if moves <= 0 and not game_over and not game_won:
+		_fail("You ran out of moves.")
 		return
-	_set_message("Defeated %s: power %d, gained %d point(s), defense -1." % [enemy.name, enemy.power, enemy.reward])
+	_update_ui()
+	queue_redraw()
+
+
+func _handle_current_cell() -> void:
+	var cell := _cell(player_pos)
+	match cell.type:
+		CELL_TREASURE:
+			_win("You reached the treasure.")
+		CELL_ALTAR:
+			if cell.used:
+				_set_message("This altar has already been used.")
+			else:
+				_set_message("You reached an unused altar. Press Enter to reallocate stats.")
+		CELL_BONUS:
+			if not cell.collected:
+				unused_points += cell.bonus_points
+				total_bonus_points += cell.bonus_points
+				cell.collected = true
+				_set_message("Collected bonus treasure: +%d unused point(s)." % cell.bonus_points)
+			else:
+				_set_message("This bonus treasure has already been collected.")
+		_:
+			_set_message("Moved to (%d, %d)." % [player_pos.x, player_pos.y])
 
 
 func _open_altar_panel() -> void:
+	if _cell(player_pos).type != CELL_ALTAR or _cell(player_pos).used:
+		return
 	altar_panel.visible = true
 	altar_exchange_pool = _current_exchange_pool()
 	updating_altar_controls = true
-	attack_spin.value = attack
-	defense_spin.value = defense
+	moves_spin.value = moves
 	vision_spin.value = vision
-	move_spin.value = movement_points
+	defense_spin.value = defense
 	updating_altar_controls = false
 	altar_last_valid_build = _capture_altar_build()
 	_update_altar_state_label()
@@ -702,45 +564,41 @@ func _open_altar_panel() -> void:
 
 
 func _toggle_altar_panel() -> void:
-	if _cell(player_pos).type != CELL_TYPE_ALTAR:
+	if _cell(player_pos).type != CELL_ALTAR:
+		return
+	if _cell(player_pos).used:
+		_set_message("This altar has already been used.")
 		return
 	if altar_panel.visible:
 		_apply_altar_build()
 	else:
 		_open_altar_panel()
-		_set_message("Altar opened. Adjust stats, then click Apply or press Enter again to apply and leave.")
+		_set_message("Altar opened. Press Enter again or click Apply to consume this altar.")
 	_update_ui()
 	queue_redraw()
 
 
 func _apply_altar_build() -> void:
-	var new_attack := int(attack_spin.value)
-	var new_defense := int(defense_spin.value)
-	var new_vision := int(vision_spin.value)
-	var new_moves := int(move_spin.value)
-	var validation_message := _validate_altar_build(new_attack, new_defense, new_vision, new_moves)
+	var build := _capture_altar_build()
+	var validation_message := _validate_altar_build(build.moves, build.vision, build.defense)
 	if not validation_message.is_empty():
 		_set_message(validation_message)
 		_update_altar_budget()
 		return
-	var cost := _build_cost(new_attack, new_defense, new_vision, new_moves)
+	var cost := _build_cost(build.moves, build.vision, build.defense)
 	var pool := _altar_budget_pool()
 	if cost > pool:
 		_set_message("Not enough budget to apply this build.")
 		_update_altar_budget()
 		return
 
-	attack = new_attack
-	defense = new_defense
-	vision = new_vision
-	movement_points = new_moves
-	reward_points = pool - cost
-	_reveal_from_player()
-	if _remaining_moves() <= 0:
-		_fail("Move count fell below 1 after reallocation.")
-		return
+	moves = build.moves
+	vision = build.vision
+	defense = build.defense
+	unused_points = pool - cost
+	_cell(player_pos).used = true
 	altar_panel.visible = false
-	_set_message("Stats reallocated. Current moves updated.")
+	_set_message("Stats reallocated. This altar is now used.")
 	_update_ui()
 	queue_redraw()
 
@@ -750,18 +608,14 @@ func _update_altar_budget() -> void:
 		return
 	_update_altar_state_label()
 	var build := _capture_altar_build()
-	var build_attack: int = build.attack
-	var build_defense: int = build.defense
-	var build_vision: int = build.vision
-	var build_moves: int = build.moves
-	var cost := _build_cost(build_attack, build_defense, build_vision, build_moves)
+	var cost := _build_cost(build.moves, build.vision, build.defense)
 	var pool := _altar_budget_pool()
-	var validation_message := _validate_altar_build(build_attack, build_defense, build_vision, build_moves)
+	var validation_message := _validate_altar_build(build.moves, build.vision, build.defense)
 	var valid := validation_message.is_empty() and cost <= pool
 	var status := "Ready" if valid else validation_message
 	if cost > pool:
 		status = "Not enough budget"
-	altar_budget_label.text = "Build cost: %d / %d\nUnused points after apply: %d\nMoves after apply: %d\nStatus: %s\nVision: +1 costs 2\nMoves: every 5 costs 1" % [cost, pool, max(0, pool - cost), build_moves, status]
+	altar_budget_label.text = "Build cost: %d / %d\nUnused points after apply: %d\nStatus: %s\nMoves: every 5 costs 1\nVision: +1 costs 2\nDefense: +1 costs 1" % [cost, pool, max(0, pool - cost), status]
 	apply_button.disabled = not valid
 
 
@@ -769,8 +623,8 @@ func _on_altar_spin_changed() -> void:
 	if updating_altar_controls:
 		return
 	var build := _capture_altar_build()
-	var cost := _build_cost(build.attack, build.defense, build.vision, build.moves)
-	var validation_message := _validate_altar_build(build.attack, build.defense, build.vision, build.moves)
+	var cost := _build_cost(build.moves, build.vision, build.defense)
+	var validation_message := _validate_altar_build(build.moves, build.vision, build.defense)
 	if validation_message.is_empty() and cost <= _altar_budget_pool():
 		altar_last_valid_build = build
 		_update_altar_budget()
@@ -781,10 +635,9 @@ func _on_altar_spin_changed() -> void:
 
 func _capture_altar_build() -> Dictionary:
 	return {
-		"attack": int(attack_spin.value),
-		"defense": int(defense_spin.value),
+		"moves": int(moves_spin.value),
 		"vision": int(vision_spin.value),
-		"moves": int(move_spin.value)
+		"defense": int(defense_spin.value)
 	}
 
 
@@ -792,73 +645,47 @@ func _restore_altar_build(build: Dictionary) -> void:
 	if build.is_empty():
 		return
 	updating_altar_controls = true
-	attack_spin.value = build.attack
-	defense_spin.value = build.defense
+	moves_spin.value = build.moves
 	vision_spin.value = build.vision
-	move_spin.value = build.moves
+	defense_spin.value = build.defense
 	updating_altar_controls = false
 
 
-func _validate_altar_build(build_attack: int, build_defense: int, build_vision: int, build_moves: int) -> String:
-	if build_attack < 0 or build_attack > 20:
-		return "Power must be between 0 and 20."
-	if build_defense < 0 or build_defense > 20:
-		return "Defense must be between 0 and 20."
-	if build_vision < 4 or build_vision > 8:
-		return "Vision must be between 4 and 8."
+func _validate_altar_build(build_moves: int, build_vision: int, build_defense: int) -> String:
 	if build_moves < 1 or build_moves > 50:
 		return "Moves must be between 1 and 50."
+	if build_vision < 0 or build_vision > 50:
+		return "Vision must be between 0 and 50."
+	if build_defense < 0 or build_defense > 20:
+		return "Defense must be between 0 and 20."
 	return ""
 
 
 func _update_altar_state_label() -> void:
 	if altar_state_label == null:
 		return
-	altar_state_label.text = "Current Stats\nPower: %d  Defense: %d  Vision: %d\nMoves: %d\nTotal earned points: %d\nUnused points: %d\nExchange budget: %d" % [
-		attack,
-		defense,
+	altar_state_label.text = "Current Stats\nMoves: %d  Vision: %d  Defense: %d\nBonus points collected: %d\nUnused points: %d\nExchange budget: %d\nThis altar can be used once." % [
+		moves,
 		vision,
-		movement_points,
-		earned_points_total,
-		reward_points,
+		defense,
+		total_bonus_points,
+		unused_points,
 		_altar_budget_pool()
 	]
 
 
-func _build_cost(build_attack: int, build_defense: int, build_vision: int, build_moves: int) -> int:
-	return build_attack + build_defense + (build_vision - 4) * 2 + ceili(float(build_moves) / 5.0)
+func _build_cost(build_moves: int, build_vision: int, build_defense: int) -> int:
+	return ceili(float(build_moves) / 5.0) + build_vision * 2 + build_defense
 
 
 func _current_exchange_pool() -> int:
-	return _build_cost(attack, defense, vision, movement_points) + reward_points
+	return _build_cost(moves, vision, defense) + unused_points
 
 
 func _altar_budget_pool() -> int:
 	if altar_panel != null and altar_panel.visible:
 		return altar_exchange_pool
 	return _current_exchange_pool()
-
-
-func _reveal_from_player() -> void:
-	_cell(player_pos).revealed = true
-	for offset in _vision_offsets():
-		var pos := player_pos + offset
-		if _is_inside(pos):
-			_cell(pos).revealed = true
-
-
-func _vision_offsets() -> Array[Vector2i]:
-	var offsets: Array[Vector2i] = [Vector2i.UP, Vector2i.DOWN, Vector2i.LEFT, Vector2i.RIGHT]
-	var diagonals: Array[Vector2i] = [Vector2i(-1, -1), Vector2i(1, -1), Vector2i(-1, 1), Vector2i(1, 1)]
-	for index in range(clampi(vision - 4, 0, 4)):
-		offsets.append(diagonals[index])
-	return offsets
-
-
-func _enemy_is_visible(enemy: Dictionary) -> bool:
-	if enemy == null:
-		return false
-	return true
 
 
 func _draw() -> void:
@@ -868,7 +695,7 @@ func _draw() -> void:
 
 func _draw_header() -> void:
 	var font := get_theme_default_font()
-	draw_string(font, Vector2(24, 38), "Arrow keys/WASD to move; click adjacent cells; R for a new map", HORIZONTAL_ALIGNMENT_LEFT, 800, 18, Color(0.9, 0.9, 0.9))
+	draw_string(font, Vector2(24, 38), "Click hidden cells to spend Vision; WASD/arrow keys move; click revealed adjacent cells to move; R restarts", HORIZONTAL_ALIGNMENT_LEFT, 1000, 16, Color(0.9, 0.9, 0.9))
 
 
 func _draw_grid() -> void:
@@ -885,14 +712,16 @@ func _draw_grid() -> void:
 func _draw_cell_background(rect: Rect2, pos: Vector2i) -> void:
 	var cell := _cell(pos)
 	var color := Color(0.16, 0.16, 0.17)
-	if cell.revealed or pos == player_pos or cell.type == CELL_TYPE_ALTAR:
+	if cell.revealed or pos == player_pos:
 		color = Color(0.72, 0.73, 0.72)
-		if cell.type == CELL_TYPE_START:
+		if cell.type == CELL_START:
 			color = Color(0.28, 0.78, 0.82)
-		elif cell.type == CELL_TYPE_ALTAR:
-			color = Color(0.58, 0.40, 0.76)
-		elif cell.type == CELL_TYPE_TREASURE:
+		elif cell.type == CELL_ALTAR:
+			color = Color(0.58, 0.40, 0.76) if not cell.used else Color(0.34, 0.27, 0.42)
+		elif cell.type == CELL_TREASURE:
 			color = Color(0.94, 0.72, 0.18)
+		elif cell.type == CELL_BONUS:
+			color = Color(0.24, 0.62, 0.34) if not cell.collected else Color(0.32, 0.42, 0.34)
 	draw_rect(rect.grow(-1), color, true)
 
 
@@ -902,112 +731,41 @@ func _draw_cell_content(rect: Rect2, pos: Vector2i, font: Font) -> void:
 		draw_circle(rect.get_center(), cell_size * 0.32, Color(0.08, 0.34, 0.9))
 		_draw_centered_text(font, rect, "P", 20, Color.WHITE)
 		return
-	if cell.type == CELL_TYPE_ALTAR:
-		var center := rect.get_center()
-		draw_colored_polygon([
-			center + Vector2(0, -cell_size * 0.34),
-			center + Vector2(cell_size * 0.34, 0),
-			center + Vector2(0, cell_size * 0.34),
-			center + Vector2(-cell_size * 0.34, 0)
-		], Color(0.46, 0.12, 0.76))
-		_draw_centered_text(font, rect, "A", 18, Color.WHITE)
-		return
 	if not cell.revealed:
 		return
-	if cell.type == CELL_TYPE_TREASURE:
-		_draw_star(rect.get_center(), cell_size * 0.34, Color(1.0, 0.9, 0.1))
-		_draw_centered_text(font, rect, "T", 18, Color(0.2, 0.12, 0.0))
+	if cell.mine:
+		_draw_mine(rect.get_center(), cell_size * 0.23)
+		_draw_centered_text(font, rect, "M", 15, Color.WHITE)
 		return
-	if cell.enemy != null and _enemy_is_visible(cell.enemy):
-		_draw_enemy(rect, cell.enemy, font)
-		return
-	var number: int = cell.number
-	if number > 0:
-		_draw_centered_text(font, rect, str(number), 18, _number_color(number))
-
-
-func _draw_enemy(rect: Rect2, enemy: Dictionary, font: Font) -> void:
-	var center := rect.get_center()
-	var radius := cell_size * 0.28
-	var color: Color = enemy.color
-	match int(enemy.level):
-		1:
-			_draw_weak_enemy(center, radius, color)
-		2:
-			_draw_normal_enemy(center, radius, color)
-		3:
-			_draw_bandit_enemy(center, radius, color)
-		4:
-			_draw_raider_enemy(center, radius, color)
-		5:
-			_draw_armored_enemy(center, radius, color)
-		6:
-			_draw_elite_enemy(center, radius, color)
+	match cell.type:
+		CELL_ALTAR:
+			_draw_diamond(rect.get_center(), cell_size * 0.34, Color(0.46, 0.12, 0.76))
+			_draw_centered_text(font, rect, "A", 18, Color.WHITE)
+		CELL_TREASURE:
+			_draw_star(rect.get_center(), cell_size * 0.34, Color(1.0, 0.9, 0.1))
+			_draw_centered_text(font, rect, "T", 18, Color(0.2, 0.12, 0.0))
+		CELL_BONUS:
+			draw_circle(rect.get_center(), cell_size * 0.28, Color(0.1, 0.72, 0.24))
+			_draw_centered_text(font, rect, "B", 18, Color.WHITE)
 		_:
-			_draw_guard_enemy(center, radius)
-	_draw_centered_text_at(font, Rect2(rect.position, Vector2(rect.size.x, rect.size.y * 0.55)), enemy.letter, 13, Color.WHITE)
-	_draw_centered_text_at(font, Rect2(rect.position + Vector2(0, rect.size.y * 0.48), Vector2(rect.size.x, rect.size.y * 0.5)), str(enemy.power), 12, Color.WHITE)
+			var number: int = cell.number
+			if number > 0:
+				_draw_centered_text(font, rect, str(number), 18, _number_color(number))
 
 
-func _draw_weak_enemy(center: Vector2, radius: float, color: Color) -> void:
-	draw_circle(center, radius * 0.72, color)
-	draw_circle(center + Vector2(-radius * 0.2, -radius * 0.2), radius * 0.18, Color(1.0, 0.78, 0.78))
+func _draw_mine(center: Vector2, radius: float) -> void:
+	draw_circle(center, radius, Color(0.05, 0.05, 0.05))
+	for direction in [Vector2.RIGHT, Vector2.LEFT, Vector2.UP, Vector2.DOWN, Vector2(1, 1).normalized(), Vector2(-1, 1).normalized(), Vector2(1, -1).normalized(), Vector2(-1, -1).normalized()]:
+		draw_line(center, center + direction * radius * 1.45, Color(0.05, 0.05, 0.05), 2.0)
 
 
-func _draw_normal_enemy(center: Vector2, radius: float, color: Color) -> void:
-	draw_circle(center, radius, color)
-	draw_arc(center, radius * 0.62, 0.0, TAU, 32, Color.WHITE, 2.0)
-
-
-func _draw_bandit_enemy(center: Vector2, radius: float, color: Color) -> void:
-	draw_colored_polygon([
-		center + Vector2(0, -radius),
-		center + Vector2(radius, radius),
-		center + Vector2(-radius, radius)
-	], color)
-	draw_line(center + Vector2(-radius * 0.48, -radius * 0.05), center + Vector2(radius * 0.48, -radius * 0.05), Color.WHITE, 2.0)
-
-
-func _draw_raider_enemy(center: Vector2, radius: float, color: Color) -> void:
+func _draw_diamond(center: Vector2, radius: float, color: Color) -> void:
 	draw_colored_polygon([
 		center + Vector2(0, -radius),
 		center + Vector2(radius, 0),
 		center + Vector2(0, radius),
 		center + Vector2(-radius, 0)
 	], color)
-	draw_line(center + Vector2(-radius * 0.55, 0), center + Vector2(radius * 0.55, 0), Color.WHITE, 2.0)
-	draw_line(center + Vector2(0, -radius * 0.55), center + Vector2(0, radius * 0.55), Color.WHITE, 2.0)
-
-
-func _draw_armored_enemy(center: Vector2, radius: float, color: Color) -> void:
-	var rect := Rect2(center - Vector2(radius, radius), Vector2(radius * 2, radius * 2))
-	draw_rect(rect, color, true)
-	draw_rect(rect.grow(-radius * 0.22), Color(0.7, 0.08, 0.08), false, 2.0)
-	draw_line(center + Vector2(-radius, 0), center + Vector2(radius, 0), Color(0.95, 0.55, 0.55), 1.5)
-
-
-func _draw_elite_enemy(center: Vector2, radius: float, color: Color) -> void:
-	var points := PackedVector2Array()
-	for index in range(6):
-		var angle := -PI / 2.0 + index * TAU / 6.0
-		points.append(center + Vector2(cos(angle), sin(angle)) * radius)
-	draw_colored_polygon(points, color)
-	draw_arc(center, radius * 0.58, 0.0, TAU, 32, Color(0.95, 0.18, 0.18), 2.0)
-
-
-func _draw_guard_enemy(center: Vector2, radius: float) -> void:
-	var base_y := center.y + radius * 0.55
-	var crown := PackedVector2Array([
-		center + Vector2(-radius, radius * 0.55),
-		center + Vector2(-radius * 0.72, -radius * 0.72),
-		center + Vector2(-radius * 0.25, -radius * 0.12),
-		center + Vector2(0, -radius),
-		center + Vector2(radius * 0.25, -radius * 0.12),
-		center + Vector2(radius * 0.72, -radius * 0.72),
-		center + Vector2(radius, radius * 0.55)
-	])
-	draw_colored_polygon(crown, Color(0.03, 0.03, 0.03))
-	draw_line(Vector2(center.x - radius, base_y), Vector2(center.x + radius, base_y), Color(1.0, 0.74, 0.12), 3.0)
 
 
 func _draw_star(center: Vector2, radius: float, color: Color) -> void:
@@ -1020,10 +778,6 @@ func _draw_star(center: Vector2, radius: float, color: Color) -> void:
 
 
 func _draw_centered_text(font: Font, rect: Rect2, text: String, font_size: int, color: Color) -> void:
-	_draw_centered_text_at(font, rect, text, font_size, color)
-
-
-func _draw_centered_text_at(font: Font, rect: Rect2, text: String, font_size: int, color: Color) -> void:
 	var text_size := font.get_string_size(text, HORIZONTAL_ALIGNMENT_CENTER, -1, font_size)
 	var text_position := Vector2(rect.position.x, rect.position.y + rect.size.y * 0.5 + text_size.y * 0.35)
 	draw_string(font, text_position, text, HORIZONTAL_ALIGNMENT_CENTER, rect.size.x, font_size, color)
@@ -1045,15 +799,13 @@ func _screen_to_cell(screen_pos: Vector2) -> Vector2i:
 
 
 func _update_ui() -> void:
-	stats_label.text = "Power: %d / 20\nDefense: %d / 20\nVision: %d / 8\nMoves: %d\nTotal earned points: %d\nUnused points: %d\nExchange budget: %d\nEnemy count: %d\nTreasure: (%d, %d)" % [
-		attack,
-		defense,
+	stats_label.text = "Moves: %d\nVision clicks: %d\nDefense: %d\nUnused points: %d\nBonus points collected: %d\nMines: %d\nTreasure: (%d, %d)" % [
+		moves,
 		vision,
-		_remaining_moves(),
-		earned_points_total,
-		reward_points,
-		_current_exchange_pool(),
-		_enemy_count(),
+		defense,
+		unused_points,
+		total_bonus_points,
+		_mine_count(),
 		treasure_pos.x,
 		treasure_pos.y
 	]
@@ -1069,6 +821,7 @@ func _fail(reason: String) -> void:
 	game_over = true
 	game_won = false
 	altar_panel.visible = false
+	_reveal_all_mines()
 	_set_message("[color=#d03030]Defeat: %s[/color]\nPress R to restart." % reason)
 	_update_ui()
 	queue_redraw()
@@ -1083,17 +836,19 @@ func _win(reason: String) -> void:
 	queue_redraw()
 
 
-func _remaining_moves() -> int:
-	return movement_points
+func _reveal_all_mines() -> void:
+	for y in range(GRID_SIZE):
+		for x in range(GRID_SIZE):
+			var pos := Vector2i(x, y)
+			if _cell(pos).mine:
+				_cell(pos).revealed = true
 
 
-func _enemy_count() -> int:
+func _mine_count() -> int:
 	var count := 0
 	for y in range(GRID_SIZE):
 		for x in range(GRID_SIZE):
-			if Vector2i(x, y) == treasure_pos:
-				continue
-			if _cell(Vector2i(x, y)).enemy != null:
+			if _cell(Vector2i(x, y)).mine:
 				count += 1
 	return count
 
@@ -1133,6 +888,13 @@ func _manhattan(a: Vector2i, b: Vector2i) -> int:
 
 func _chebyshev(a: Vector2i, b: Vector2i) -> int:
 	return maxi(abs(a.x - b.x), abs(a.y - b.y))
+
+
+func _is_far_from_existing(pos: Vector2i, existing: Array[Vector2i], distance: int) -> bool:
+	for other in existing:
+		if _manhattan(pos, other) < distance:
+			return false
+	return true
 
 
 func signi(value: int) -> int:
