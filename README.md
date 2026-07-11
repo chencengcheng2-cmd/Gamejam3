@@ -116,7 +116,7 @@ Clue numbers appear on revealed normal cells. They tell you how many mines are i
 | <img src="docs/assets/icons/clue-3.svg" width="48" alt="Clue 3"> | `3` | High danger. Three nearby mines. |
 | <img src="docs/assets/icons/clue-4.svg" width="48" alt="Clue 4 plus"> | `4+` | Very high danger. Four or more nearby mines. |
 
-Some revealed blank cells may show an arrow (`^`, `v`, `<`, or `>`). These arrows are sparse hints that point in the rough direction of the treasure. They are guidance hints, not movement commands.
+Rare revealed blank cells may show an arrow (`^`, `v`, `<`, or `>`). These arrows are subtle hints that point in the rough direction of the treasure. They are guidance hints, not movement commands.
 
 ## Map Generation
 
@@ -127,7 +127,7 @@ Some revealed blank cells may show an arrow (`^`, `v`, `<`, or `>`). These arrow
 - Bonus treasures are placed across the map to give the player more altar-exchange points.
 - The map currently generates 16 altars.
 - The map currently generates 26 bonus treasures.
-- Some revealed blank safe cells can show sparse arrows pointing toward the rough treasure direction.
+- A small number of revealed blank safe cells can show subtle arrows pointing toward the rough treasure direction.
 - Altars are distributed by map regions for a more even spread, and each can be used once.
 
 ## Current Prototype Scope
